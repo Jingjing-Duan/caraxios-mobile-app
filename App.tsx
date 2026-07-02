@@ -1,9 +1,6 @@
-import { SafeAreaView, Text } from "react-native";
+import React from 'react';
+import VehicleDetailScreen from './src/screens/VehicleDetailScreen';
 
 export default function App() {
-  return (
-    <SafeAreaView style={{ marginTop: 80, padding: 20 }}>
-      <Text>CarAxios Mobile App</Text>
-    </SafeAreaView>
-  );
+    return <VehicleDetailScreen />;
 }
