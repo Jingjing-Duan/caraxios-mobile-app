@@ -7,6 +7,8 @@ export const vehicles = [
     trim: "Premium",
     askPrice: 38000,
     mileage: 80000,
+    vin:'WA1ANAFY123456',
+    description:'Luxury SUV',
     status: "available",
     primaryImage:
       "https://images.unsplash.com/photo-1555215695-3004980ad54e"
@@ -20,6 +22,8 @@ export const vehicles = [
     askPrice: 32000,
     mileage: 60000,
     status: "available",
+    vin:'JT123456789',
+    description:'Family SUV', 
     primaryImage:
       "https://images.unsplash.com/photo-1494976388531-d1058494cdd8"
   }

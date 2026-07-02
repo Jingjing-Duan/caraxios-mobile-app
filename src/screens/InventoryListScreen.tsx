@@ -1,7 +1,8 @@
 import React from 'react';
 import VehicleCard from '../components/VehicleCard';
+import { Pressable } from 'react-native';
 
-export default function InventoryListScreen() {
+export default function InventoryListScreen({ navigation }: any) {
 
     const vehicles = [
         {
@@ -25,10 +26,12 @@ export default function InventoryListScreen() {
     return (
         <>
             {vehicles.map(vehicle => (
-                <VehicleCard
+                <Pressable
                     key={vehicle.id}
-                    vehicle={vehicle}
-                />
+                    onPress={() => navigation.navigate('VehicleDetail')}
+                >
+                    <VehicleCard vehicle={vehicle} />
+                </Pressable>
             ))}
         </>
     );
