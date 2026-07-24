@@ -16,6 +16,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 
 
+
 export default function CreateVehicleScreen() {
   const [year, setYear] = useState('');
   const [make, setMake] = useState('');
@@ -24,6 +25,7 @@ export default function CreateVehicleScreen() {
   const [mileage, setMileage] = useState('');
   const [vin, setVin] = useState('');
   const [description, setDescription] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 图片数组
     type VehicleImage = {
@@ -80,25 +82,53 @@ export default function CreateVehicleScreen() {
     });
     };
 
+    const validateForm = () => {
+    const newErrors: Record<string, string> = {};
 
+    if (!year.trim()) {
+        newErrors.year = 'Year is required.';
+    } else if (isNaN(Number(year))) {
+        newErrors.year = 'Year must be a number.';
+    }
 
+    if (!make.trim()) {
+        newErrors.make = 'Make is required.';
+    }
 
+    if (!model.trim()) {
+        newErrors.model = 'Model is required.';
+    }
 
-  const handleSave = () => {
-    const vehicle = {
+    if (!askPrice.trim()) {
+        newErrors.askPrice = 'Ask price is required.';
+    } else if (Number(askPrice) <= 0) {
+        newErrors.askPrice = 'Ask price must be greater than 0.';
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+    };
+ 
+const handleSave = () => {
+  if (!validateForm()) {
+    return;
+  }
+
+  const vehicle = {
     year: Number(year),
-    make,
-    model,
+    make: make.trim(),
+    model: model.trim(),
     askPrice: Number(askPrice),
     mileage: Number(mileage),
-    vin,
-    description,
+    vin: vin.trim(),
+    description: description.trim(),
     status: 'available',
     images,
-    };
-
-    console.log('Vehicle to save:', vehicle);
   };
+
+  console.log('Vehicle to save:', vehicle);
+};
 
   const renderImageItem = ({
   item,
@@ -106,7 +136,8 @@ export default function CreateVehicleScreen() {
   isActive,
   getIndex,
 }: RenderItemParams<VehicleImage>) => {
-  const index = getIndex();
+  
+    const index = getIndex();
 
   if (index === undefined) {
     return null;
@@ -171,35 +202,66 @@ export default function CreateVehicleScreen() {
         onChangeText={setVin}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Year"
-        value={year}
-        onChangeText={setYear}
-        keyboardType="numeric"
-      />
+<TextInput
+  style={[
+    styles.input,
+    errors.year && styles.inputError,
+  ]}
+  placeholder="Year"
+  value={year}
+  onChangeText={setYear}
+  keyboardType="numeric"
+/>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Make"
-        value={make}
-        onChangeText={setMake}
-      />
+{errors.year && (
+  <Text style={styles.errorText}>{errors.year}</Text>
+)}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Model"
-        value={model}
-        onChangeText={setModel}
-      />
+<TextInput
+  style={[
+    styles.input,
+    errors.make && styles.inputError,
+  ]}
+  placeholder="Make"
+  value={make}
+  onChangeText={setMake}
+/>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Ask Price"
-        value={askPrice}
-        onChangeText={setAskPrice}
-        keyboardType="numeric"
-      />
+{errors.make && (
+  <Text style={styles.errorText}>{errors.make}</Text>
+)}
+<TextInput
+  style={[
+    styles.input,
+    errors.model ? styles.inputError : null,
+  ]}
+  placeholder="Model"
+  value={model}
+  onChangeText={setModel}
+/>
+
+{errors.model && (
+  <Text style={styles.errorText}>
+    {errors.model}
+  </Text>
+)}
+
+<TextInput
+  style={[
+    styles.input,
+    errors.askPrice ? styles.inputError : null,
+  ]}
+  placeholder="Ask Price"
+  value={askPrice}
+  onChangeText={setAskPrice}
+  keyboardType="numeric"
+/>
+
+{errors.askPrice && (
+  <Text style={styles.errorText}>
+    {errors.askPrice}
+  </Text>
+)}
 
       <TextInput
         style={styles.input}
@@ -386,4 +448,15 @@ dragHint: {
     removeText: {
     fontWeight: '600',
     },
+    inputError: {
+  borderColor: 'red',
+},
+
+errorText: {
+  color: 'red',
+  fontSize: 13,
+  marginTop: -8,
+  marginBottom: 10,
+},
 });
+
