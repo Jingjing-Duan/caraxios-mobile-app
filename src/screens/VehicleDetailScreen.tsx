@@ -1,9 +1,31 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Button,
+} from 'react-native';
+
 import { vehicles } from '../mocks/vehicles';
 
-export default function VehicleDetailScreen() {
-    const vehicle = vehicles[0];
+export default function VehicleDetailScreen({
+  route,
+  navigation,
+}: any) {
+  const { vehicleId } = route.params;
+
+  const vehicle = vehicles.find(
+    v => v.id === vehicleId
+  );
+
+  if (!vehicle) {
+    return (
+      <View style={styles.container}>
+        <Text>Vehicle not found.</Text>
+      </View>
+    );
+  }
 
     return (
         <ScrollView style={styles.container}>
@@ -40,6 +62,14 @@ export default function VehicleDetailScreen() {
                     Well-maintained vehicle with clean interior, smooth driving experience, and great features.
                 </Text>
             </View>
+            <Button
+                title="Edit Vehicle"
+                onPress={() =>
+                    navigation.navigate('EditVehicle', {
+                    vehicleId: vehicle.id,
+                    })
+                }
+                />
         </ScrollView>
     );
 }

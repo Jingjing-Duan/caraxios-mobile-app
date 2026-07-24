@@ -28,7 +28,11 @@ export default function InventoryListScreen({ navigation }: any) {
             {filteredVehicles.map(vehicle => (
                 <Pressable
                     key={vehicle.id}
-                    onPress={() => navigation.navigate('VehicleDetail')}
+                    onPress={() =>
+                        navigation.navigate('VehicleDetail', {
+                            vehicleId: vehicle.id,
+                        })
+                        }
                 >
                     <VehicleCard vehicle={vehicle} />
                 </Pressable>

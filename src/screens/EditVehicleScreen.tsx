@@ -1,9 +1,21 @@
 import React, { useState } from 'react';
-import { Text, TextInput, Button, StyleSheet, ScrollView } from 'react-native';
+import { Text, TextInput, Button, StyleSheet, ScrollView, View } from 'react-native';
 import { vehicles } from '../mocks/vehicles';
 
-export default function EditVehicleScreen() {
-    const existingVehicle = vehicles[0];
+export default function EditVehicleScreen({ route }: any) {
+    const { vehicleId } = route.params;
+
+    const existingVehicle = vehicles.find(
+    vehicle => vehicle.id === vehicleId
+    );
+
+    if (!existingVehicle) {
+    return (
+        <View>
+        <Text>Vehicle not found.</Text>
+        </View>
+    );
+    }
 
     const [year, setYear] = useState(String(existingVehicle.year));
     const [make, setMake] = useState(existingVehicle.make);
