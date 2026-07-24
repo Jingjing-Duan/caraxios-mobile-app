@@ -12,20 +12,53 @@ export default function EditVehicleScreen() {
     const [mileage, setMileage] = useState(String(existingVehicle.mileage));
     const [vin, setVin] = useState(existingVehicle.vin ?? '');
     const [description, setDescription] = useState(existingVehicle.description ?? '');
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const handleUpdate = () => {
-        const updatedVehicle = {
-            ...existingVehicle,
-            year: Number(year),
-            make,
-            model,
-            askPrice: Number(askPrice),
-            mileage: Number(mileage),
-            vin,
-            description,
+    const validateForm = () => {
+        const newErrors: Record<string, string> = {};
+
+        if (!year.trim()) {
+            newErrors.year = 'Year is required.';
+        } else if (isNaN(Number(year))) {
+            newErrors.year = 'Year must be a number.';
+        }
+
+        if (!make.trim()) {
+            newErrors.make = 'Make is required.';
+        }
+
+        if (!model.trim()) {
+            newErrors.model = 'Model is required.';
+        }
+
+        if (!askPrice.trim()) {
+            newErrors.askPrice = 'Ask price is required.';
+        } else if (Number(askPrice) <= 0) {
+            newErrors.askPrice = 'Ask price must be greater than 0.';
+        }
+
+        setErrors(newErrors);
+
+        return Object.keys(newErrors).length === 0;
         };
 
-        console.log('Vehicle updated:', updatedVehicle);
+const handleUpdate = () => {
+  if (!validateForm()) {
+    return;
+  }
+
+    const updatedVehicle = {
+        ...existingVehicle,
+        year: Number(year),
+        make: make.trim(),
+        model: model.trim(),
+        askPrice: Number(askPrice),
+        mileage: Number(mileage),
+        vin: vin.trim(),
+        description: description.trim(),
+    };
+
+    console.log('Vehicle updated:', updatedVehicle);
     };
 
     return (
@@ -33,10 +66,69 @@ export default function EditVehicleScreen() {
             <Text style={styles.title}>Edit Vehicle</Text>
 
             <TextInput style={styles.input} placeholder="VIN" value={vin} onChangeText={setVin} />
-            <TextInput style={styles.input} placeholder="Year" value={year} onChangeText={setYear} keyboardType="numeric" />
-            <TextInput style={styles.input} placeholder="Make" value={make} onChangeText={setMake} />
-            <TextInput style={styles.input} placeholder="Model" value={model} onChangeText={setModel} />
-            <TextInput style={styles.input} placeholder="Ask Price" value={askPrice} onChangeText={setAskPrice} keyboardType="numeric" />
+            <TextInput
+            style={[
+                styles.input,
+                errors.year ? styles.inputError : null,
+            ]}
+            placeholder="Year"
+            value={year}
+            onChangeText={setYear}
+            keyboardType="numeric"
+            />
+
+            {errors.year && (
+            <Text style={styles.errorText}>
+                {errors.year}
+            </Text>
+            )}
+            <TextInput
+            style={[
+                styles.input,
+                errors.make ? styles.inputError : null,
+            ]}
+            placeholder="Make"
+            value={make}
+            onChangeText={setMake}
+            />
+
+            {errors.make && (
+            <Text style={styles.errorText}>
+                {errors.make}
+            </Text>
+            )}
+            <TextInput
+            style={[
+                styles.input,
+                errors.model ? styles.inputError : null,
+            ]}
+            placeholder="Model"
+            value={model}
+            onChangeText={setModel}
+            />
+
+            {errors.model && (
+            <Text style={styles.errorText}>
+                {errors.model}
+            </Text>
+            )}
+            <TextInput
+            style={[
+                styles.input,
+                errors.askPrice ? styles.inputError : null,
+            ]}
+            placeholder="Ask Price"
+            value={askPrice}
+            onChangeText={setAskPrice}
+            keyboardType="numeric"
+            />
+
+            {errors.askPrice && (
+            <Text style={styles.errorText}>
+                {errors.askPrice}
+            </Text>
+            )}
+
             <TextInput style={styles.input} placeholder="Mileage" value={mileage} onChangeText={setMileage} keyboardType="numeric" />
 
             <TextInput
@@ -74,5 +166,15 @@ const styles = StyleSheet.create({
     textArea: {
         height: 100,
         textAlignVertical: 'top',
+    },
+    inputError: {
+    borderColor: 'red',
+    },
+
+    errorText: {
+    color: 'red',
+    fontSize: 13,
+    marginTop: -8,
+    marginBottom: 10,
     },
 });
