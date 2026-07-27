@@ -13,11 +13,16 @@ import {
   Pressable,
 } from 'react-native';
 
+
+
 import * as ImagePicker from 'expo-image-picker';
+import {
+  createVehicle,
+  decodeVin,
+} from '../services/vehicleService';
 
 
-
-export default function CreateVehicleScreen() {
+export default function CreateVehicleScreen({ navigation }: any) {
   const [year, setYear] = useState('');
   const [make, setMake] = useState('');
   const [model, setModel] = useState('');
@@ -26,6 +31,9 @@ export default function CreateVehicleScreen() {
   const [vin, setVin] = useState('');
   const [description, setDescription] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [decodingVin, setDecodingVin] = useState(false);
+  const [vinError, setVinError] = useState('');
+
 
   // 图片数组
     type VehicleImage = {
@@ -110,7 +118,46 @@ export default function CreateVehicleScreen() {
     return Object.keys(newErrors).length === 0;
     };
  
-const handleSave = () => {
+const handleDecodeVin = async () => {
+  if (!vin.trim()) {
+    setVinError('Please enter a VIN.');
+    return;
+  }
+
+  try {
+    setDecodingVin(true);
+    setVinError('');
+
+    const result = await decodeVin(vin.trim());
+
+    const decoded = result.decodedVehicle;
+
+    if (decoded) {
+      if (decoded.year) {
+        setYear(String(decoded.year));
+      }
+
+      if (decoded.make) {
+        setMake(decoded.make);
+      }
+
+      if (decoded.model) {
+        setModel(decoded.model);
+      }
+    }
+
+    console.log('VIN decoded:', result);
+
+  } catch (error: any) {
+    setVinError(
+      error.message || 'Unable to decode VIN.'
+    );
+  } finally {
+    setDecodingVin(false);
+  }
+};
+
+const handleSave = async () => {
   if (!validateForm()) {
     return;
   }
@@ -120,14 +167,30 @@ const handleSave = () => {
     make: make.trim(),
     model: model.trim(),
     askPrice: Number(askPrice),
-    mileage: Number(mileage),
-    vin: vin.trim(),
-    description: description.trim(),
+    mileage: mileage ? Number(mileage) : null,
+    vin: vin.trim() || null,
+    description: description.trim() || null,
     status: 'available',
-    images,
   };
 
-  console.log('Vehicle to save:', vehicle);
+  try {
+    console.log('Sending vehicle:', vehicle);
+
+    const createdVehicle = await createVehicle(vehicle);
+
+    console.log('Vehicle created:', createdVehicle);
+
+    navigation.replace("Inventory", {
+        statusFilter: "all",
+    });
+    
+  } catch (error: any) {
+    console.error('Create vehicle failed:', error);
+
+    setErrors({
+      general: error.message || 'Failed to create vehicle.',
+    });
+  }
 };
 
   const renderImageItem = ({
@@ -195,12 +258,31 @@ const handleSave = () => {
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Add Vehicle</Text>
 
-      <TextInput
-        style={styles.input}
+    <View style={styles.vinRow}>
+    <TextInput
+        style={[styles.input, styles.vinInput]}
         placeholder="VIN"
         value={vin}
         onChangeText={setVin}
-      />
+        autoCapitalize="characters"
+    />
+
+    <Pressable
+        style={styles.decodeButton}
+        onPress={handleDecodeVin}
+        disabled={decodingVin}
+    >
+        <Text style={styles.decodeButtonText}>
+        {decodingVin ? 'Decoding...' : 'Decode VIN'}
+        </Text>
+    </Pressable>
+    </View>
+
+    {vinError ? (
+    <Text style={styles.errorText}>
+        {vinError}
+    </Text>
+    ) : null}
 
 <TextInput
   style={[
@@ -300,6 +382,12 @@ const handleSave = () => {
         horizontal
         contentContainerStyle={styles.imageContainer}
         />
+
+        {errors.general && (
+        <Text style={styles.errorText}>
+            {errors.general}
+        </Text>
+        )}
 
       <Button
         title="Save Vehicle"
@@ -458,5 +546,28 @@ errorText: {
   marginTop: -8,
   marginBottom: 10,
 },
+
+vinRow: {
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  gap: 10,
+},
+
+vinInput: {
+  flex: 1,
+},
+
+decodeButton: {
+  paddingHorizontal: 14,
+  paddingVertical: 13,
+  borderRadius: 10,
+  backgroundColor: '#333',
+},
+
+decodeButtonText: {
+  color: '#fff',
+  fontWeight: '600',
+},
+
 });
 

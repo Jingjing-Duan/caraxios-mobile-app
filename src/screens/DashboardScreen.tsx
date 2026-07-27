@@ -1,94 +1,181 @@
-import React from 'react';
-import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
-import { vehicles } from '../mocks/vehicles';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  Button,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
+
+import { getVehicles } from '../services/vehicleService';
 
 export default function DashboardScreen({ navigation }: any) {
-    const totalVehicles = vehicles.length;
-    const availableVehicles = vehicles.filter(v => v.status === 'Available').length;
-    const soldVehicles = vehicles.filter(v => v.status === 'Sold').length;
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    return (
-        <ScrollView style={styles.container}>
-            <Text style={styles.title}>CarAxios Dashboard</Text>
+  useEffect(() => {
+    loadVehicles();
+  }, []);
 
-            <View style={styles.statsContainer}>
-                <View style={styles.card}>
-                    <Text style={styles.cardNumber}>{totalVehicles}</Text>
-                    <Text style={styles.cardLabel}>Total Inventory</Text>
-                </View>
+  const loadVehicles = async () => {
+    try {
+      const data = await getVehicles();
 
-                <View style={styles.card}>
-                    <Text style={styles.cardNumber}>{availableVehicles}</Text>
-                    <Text style={styles.cardLabel}>Available</Text>
-                </View>
+      setVehicles(data.items ?? data);
+    } catch (error) {
+      console.error('Failed to load dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                <View style={styles.card}>
-                    <Text style={styles.cardNumber}>{soldVehicles}</Text>
-                    <Text style={styles.cardLabel}>Sold</Text>
-                </View>
-            </View>
+  const totalVehicles = vehicles.length;
 
-            <View style={styles.actions}>
-                <Text style={styles.sectionTitle}>Quick Actions</Text>
+  const availableVehicles = vehicles.filter(
+    vehicle => vehicle.status === 'available'
+  ).length;
 
-                <View style={styles.buttonWrapper}>
-                    <Button
-                        title="View Inventory"
-                        onPress={() => navigation.navigate('Inventory')}
-                    />
-                </View>
+  const soldVehicles = vehicles.filter(
+    vehicle => vehicle.status === 'sold'
+  ).length;
 
-                <View style={styles.buttonWrapper}>
-                    <Button
-                        title="Add Vehicle"
-                        onPress={() => navigation.navigate('CreateVehicle')}
-                    />
-                </View>
-            </View>
-        </ScrollView>
-    );
+  const draftVehicles = vehicles.filter(
+    vehicle => vehicle.status === 'draft'
+  ).length;
+
+    const inactiveVehicles = vehicles.filter(
+    vehicle => vehicle.status === 'inactive'
+  ).length;
+
+  if (loading) {
+    return <Text>Loading dashboard...</Text>;
+  }
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>CarAxios Dashboard</Text>
+
+    <View style={styles.statsContainer}>
+
+    <Pressable
+        style={styles.card}
+        onPress={() =>
+        navigation.navigate('Inventory', {
+            statusFilter: 'all',
+        })
+        }
+    >
+        <Text style={styles.cardNumber}>{totalVehicles}</Text>
+        <Text style={styles.cardLabel}>Total Inventory</Text>
+    </Pressable>
+
+    <Pressable
+        style={styles.card}
+        onPress={() =>
+        navigation.navigate('Inventory', {
+            statusFilter: 'available',
+        })
+        }
+    >
+        <Text style={styles.cardNumber}>{availableVehicles}</Text>
+        <Text style={styles.cardLabel}>Available</Text>
+    </Pressable>
+
+    <Pressable
+        style={styles.card}
+        onPress={() =>
+        navigation.navigate('Inventory', {
+            statusFilter: 'sold',
+        })
+        }
+    >
+        <Text style={styles.cardNumber}>{soldVehicles}</Text>
+        <Text style={styles.cardLabel}>Sold</Text>
+    </Pressable>
+
+    </View>
+
+{/*
+      <View style={styles.card}>
+        <Text style={styles.cardNumber}>{draftVehicles}</Text>
+        <Text style={styles.cardLabel}>Draft</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardNumber}>{inactiveVehicles}</Text>
+        <Text style={styles.cardLabel}>Inactive</Text>
+      </View>
+*/}
+      <View style={styles.actions}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+
+        <View style={styles.buttonWrapper}>
+          <Button
+            title="View Inventory"
+            onPress={() => navigation.navigate('Inventory')}
+          />
+        </View>
+
+        <View style={styles.buttonWrapper}>
+          <Button
+            title="Add Vehicle"
+            onPress={() => navigation.navigate('CreateVehicle')}
+          />
+        </View>
+      </View>
+    </ScrollView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        padding: 20,
-        backgroundColor: '#fff',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginBottom: 20,
-    },
-    statsContainer: {
-        gap: 12,
-        marginBottom: 30,
-    },
-    card: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 14,
-        padding: 20,
-        backgroundColor: '#f8f8f8',
-    },
-    cardNumber: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        marginBottom: 6,
-    },
-    cardLabel: {
-        fontSize: 16,
-        color: '#666',
-    },
-    actions: {
-        marginTop: 10,
-    },
-    sectionTitle: {
-        fontSize: 22,
-        fontWeight: '600',
-        marginBottom: 16,
-    },
-    buttonWrapper: {
-        marginBottom: 14,
-    },
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+
+  statsContainer: {
+    gap: 12,
+    marginBottom: 30,
+  },
+
+  card: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 14,
+    padding: 20,
+    backgroundColor: '#f8f8f8',
+  },
+
+  cardNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+
+  cardLabel: {
+    fontSize: 16,
+    color: '#666',
+  },
+
+  actions: {
+    marginTop: 10,
+  },
+
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+
+  buttonWrapper: {
+    marginBottom: 14,
+  },
 });

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -7,71 +8,96 @@ import {
   Button,
 } from 'react-native';
 
-import { vehicles } from '../mocks/vehicles';
+import { getVehicleById } from '../services/vehicleService';
 
 export default function VehicleDetailScreen({
   route,
   navigation,
 }: any) {
+
   const { vehicleId } = route.params;
 
-  const vehicle = vehicles.find(
-    v => v.id === vehicleId
-  );
+  const [vehicle, setVehicle] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  if (!vehicle) {
-    return (
-      <View style={styles.container}>
-        <Text>Vehicle not found.</Text>
-      </View>
+
+  useFocusEffect(
+  useCallback(() => {
+    loadVehicle();
+  }, [vehicleId])
+);
+
+const loadVehicle = async () => {
+  try {
+    setLoading(true);
+
+    const data = await getVehicleById(vehicleId);
+
+    setVehicle(data);
+  } catch (error: any) {
+    setError(
+      error.message || 'Unable to load vehicle.'
     );
+  } finally {
+    setLoading(false);
+  }
+};
+
+  if (loading) {
+    return <Text>Loading vehicle...</Text>;
   }
 
-    return (
-        <ScrollView style={styles.container}>
-            <View style={styles.imagePlaceholder}>
-                <Text style={styles.imageText}>Vehicle Image</Text>
-            </View>
+  if (error || !vehicle) {
+    return <Text>{error || 'Vehicle not found.'}</Text>;
+  }
 
-            <Text style={styles.title}>
-                {vehicle.year} {vehicle.make} {vehicle.model}
-            </Text>
+  return (
+    <ScrollView style={styles.container}>
 
-            <Text style={styles.price}>
-                ${vehicle.askPrice.toLocaleString()} CAD
-            </Text>
+      <Text style={styles.title}>
+        {vehicle.year} {vehicle.make} {vehicle.model}
+      </Text>
 
-            <View style={styles.section}>
-                <Text style={styles.label}>Mileage</Text>
-                <Text style={styles.value}>{vehicle.mileage.toLocaleString()} km</Text>
-            </View>
+      <Text style={styles.price}>
+        ${vehicle.askPrice?.toLocaleString()} CAD
+      </Text>
 
-            <View style={styles.section}>
-                <Text style={styles.label}>Status</Text>
-                <Text style={styles.value}>{vehicle.status}</Text>
-            </View>
+      <Text>
+        Mileage: {vehicle.mileage?.toLocaleString()} km
+      </Text>
 
-            <View style={styles.section}>
-                <Text style={styles.label}>VIN</Text>
-                <Text style={styles.value}>WA1ANAFY1M2000000</Text>
-            </View>
+      <Text>
+        VIN: {vehicle.vin || 'Not provided'}
+      </Text>
 
-            <View style={styles.section}>
-                <Text style={styles.label}>Description</Text>
-                <Text style={styles.description}>
-                    Well-maintained vehicle with clean interior, smooth driving experience, and great features.
-                </Text>
-            </View>
-            <Button
-                title="Edit Vehicle"
-                onPress={() =>
-                    navigation.navigate('EditVehicle', {
-                    vehicleId: vehicle.id,
-                    })
-                }
-                />
-        </ScrollView>
-    );
+      <Text>
+        Status: {vehicle.status}
+      </Text>
+
+      <Text>
+        Color: {vehicle.color || 'Not provided'}
+      </Text>
+
+      <Text>
+        Body Type: {vehicle.bodyType || 'Not provided'}
+      </Text>
+
+      <Text>
+        Drivetrain: {vehicle.drivetrain || 'Not provided'}
+      </Text>
+
+      <Button
+        title="Edit Vehicle"
+        onPress={() =>
+          navigation.navigate('EditVehicle', {
+            vehicleId: vehicle.id,
+          })
+        }
+      />
+
+    </ScrollView>
+  );
 }
 
 const styles = StyleSheet.create({
