@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { Pressable, TextInput, StyleSheet, ScrollView, Text} from 'react-native';
 import VehicleCard from '../components/VehicleCard';
 import { getVehicles } from '../services/vehicleService';
@@ -9,9 +10,6 @@ export default function InventoryListScreen({ navigation, route }: any) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        loadVehicles();
-    }, []);
 
     const loadVehicles = async () => {
         try {
@@ -22,7 +20,6 @@ export default function InventoryListScreen({ navigation, route }: any) {
 
             console.log('Vehicles from backend:', data);
 
-            // 兼容后端返回数组，或者 { items: [...] }
             setVehicles(data.items ?? data);
 
         } catch (err) {
@@ -32,6 +29,12 @@ export default function InventoryListScreen({ navigation, route }: any) {
             setLoading(false);
         }
     };
+
+    useFocusEffect(
+        useCallback(() => {
+            loadVehicles();
+        }, [])
+    );
 
     const statusFilter = route.params?.statusFilter ?? 'all';
 
@@ -50,27 +53,12 @@ export default function InventoryListScreen({ navigation, route }: any) {
 
 }, [navigation, statusFilter]);
 
-    const getPageTitle = () => {
-        switch (statusFilter) {
-            case 'available':
-                return 'Available Vehicles';
-
-            case 'sold':
-                return 'Sold Vehicles';
-
-            default:
-                return 'All Inventory';
-        }
-    };
-
-    const pageTitle = getPageTitle();
-
     const filteredVehicles = vehicles.filter(vehicle => {
         const keyword = searchText.toLowerCase();
 
         const matchesSearch =
-            vehicle.make.toLowerCase().includes(keyword) ||
-            vehicle.model.toLowerCase().includes(keyword) ||
+            vehicle.make?.toLowerCase().includes(keyword) ||
+            vehicle.model?.toLowerCase().includes(keyword) ||
             String(vehicle.year).includes(keyword);
 
         const matchesStatus =

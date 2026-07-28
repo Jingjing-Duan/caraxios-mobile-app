@@ -59,6 +59,12 @@ export default function DashboardScreen({ navigation }: any) {
     <View style={styles.statsContainer}>
 
     <Pressable
+        onPress={() => navigation.navigate('AIAssistant')}
+    >
+        <Text>AI Vehicle Assistant</Text>
+    </Pressable>
+
+    <Pressable
         style={styles.card}
         onPress={() =>
         navigation.navigate('Inventory', {
