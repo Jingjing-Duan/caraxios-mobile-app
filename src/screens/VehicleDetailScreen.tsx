@@ -4,6 +4,8 @@ import React, {
   useState,
 } from 'react';
 
+import { normalizeImageUrl } from '../utils/imageUtils';
+
 import {
   ActivityIndicator,
   Alert,
@@ -23,12 +25,21 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { getVehicleById } from '../services/vehicleService';
+import { getVehicleById, getVehicleImages, } from '../services/vehicleService';
 
 type VehicleImage = {
+  id?: string;
+
   url?: string;
+  imageUrl?: string;
   image_url?: string;
+  uri?: string;
+
+  isPrimary?: boolean;
   is_primary?: boolean;
+
+  displayOrder?: number;
+  display_order?: number;
 };
 
 type Vehicle = {
@@ -55,7 +66,10 @@ type Vehicle = {
   bodyType?: string;
   body_type?: string;
   drivetrain?: string;
+  engineInfo?: string;
+  engine_info?: string;
   engine?: string;
+  engine_type?: string;
   transmission?: string;
   image_url?: string;
   primary_image_url?: string;
@@ -97,7 +111,8 @@ export default function VehicleDetailScreen({
   const [error, setError] = useState('');
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isFavourite, setIsFavourite] = useState(false);
-
+  const [vehicleImages, setVehicleImages] =
+    useState<VehicleImage[]>([]);
   const galleryRef = useRef<FlatList<string>>(null);
 
   const loadVehicle = async () => {
@@ -105,9 +120,30 @@ export default function VehicleDetailScreen({
       setLoading(true);
       setError('');
 
-      const data = await getVehicleById(vehicleId);
+      const [vehicleData, imageData] = await Promise.all([
+        getVehicleById(vehicleId),
+        getVehicleImages(vehicleId),
+      ]);
 
-      setVehicle(data);
+      console.log('Vehicle detail:', vehicleData);
+      console.log('Vehicle images:', imageData);
+
+      setVehicle(
+        vehicleData.item ??
+        vehicleData.vehicle ??
+        vehicleData
+      );
+
+      const images =
+        imageData.items ??
+        imageData.images ??
+        imageData;
+
+      setVehicleImages(
+        Array.isArray(images) ? images : []
+      );
+
+      setActiveImageIndex(0);
     } catch (error: any) {
       setError(
         error.message || 'Unable to load vehicle.'
@@ -127,39 +163,24 @@ export default function VehicleDetailScreen({
     return vehicle?.id ?? vehicle?.vehicle_id ?? vehicleId;
   };
 
-  const getVehicleImages = () => {
-    if (!vehicle) {
-      return [];
-    }
+  const buildImageUrls = () => {
+  return [...vehicleImages]
+    .sort(
+      (a, b) =>
+        (a.displayOrder ?? a.display_order ?? 0) -
+        (b.displayOrder ?? b.display_order ?? 0)
+    )
+    .map(image => {
+      const rawUrl =
+        typeof image === 'string'
+          ? image
+          : image.url ??
+            image.imageUrl ??
+            image.image_url;
 
-    const imageUrls: string[] = [];
-
-    if (vehicle.primary_image_url) {
-      imageUrls.push(vehicle.primary_image_url);
-    }
-
-    if (
-      vehicle.image_url &&
-      !imageUrls.includes(vehicle.image_url)
-    ) {
-      imageUrls.push(vehicle.image_url);
-    }
-
-    vehicle.images?.forEach(image => {
-      let imageUrl: string | undefined;
-
-      if (typeof image === 'string') {
-        imageUrl = image;
-      } else {
-        imageUrl = image.url ?? image.image_url;
-      }
-
-      if (imageUrl && !imageUrls.includes(imageUrl)) {
-        imageUrls.push(imageUrl);
-      }
-    });
-
-    return imageUrls;
+      return normalizeImageUrl(rawUrl);
+    })
+    .filter((url): url is string => Boolean(url));
   };
 
   const getPrice = () => {
@@ -325,7 +346,8 @@ export default function VehicleDetailScreen({
     );
   }
 
-  const images = getVehicleImages();
+  const images = buildImageUrls();
+
   const status =
     vehicle.status?.toLowerCase() ?? 'unknown';
 
@@ -452,24 +474,24 @@ export default function VehicleDetailScreen({
             style={[
               styles.statusBadge,
               status === 'available' &&
-                styles.availableBadge,
+              styles.availableBadge,
               status === 'sold' && styles.soldBadge,
               status === 'draft' && styles.draftBadge,
               status === 'inactive' &&
-                styles.inactiveBadge,
+              styles.inactiveBadge,
             ]}
           >
             <Text
               style={[
                 styles.statusText,
                 status === 'available' &&
-                  styles.availableStatusText,
+                styles.availableStatusText,
                 status === 'sold' &&
-                  styles.soldStatusText,
+                styles.soldStatusText,
                 status === 'draft' &&
-                  styles.draftStatusText,
+                styles.draftStatusText,
                 status === 'inactive' &&
-                  styles.inactiveStatusText,
+                styles.inactiveStatusText,
               ]}
             >
               {status}
@@ -484,7 +506,7 @@ export default function VehicleDetailScreen({
                   style={[
                     styles.imageIndicator,
                     index === activeImageIndex &&
-                      styles.activeImageIndicator,
+                    styles.activeImageIndicator,
                   ]}
                 />
               ))}
@@ -532,7 +554,12 @@ export default function VehicleDetailScreen({
 
             <SpecificationCard
               label="Engine"
-              value={vehicle.engine || 'Not provided'}
+              value={
+                  vehicle.engineInfo ??
+                  vehicle.engine_info ??
+                  vehicle.engine ??
+                  'Not provided'
+                }
               icon="settings-outline"
             />
 

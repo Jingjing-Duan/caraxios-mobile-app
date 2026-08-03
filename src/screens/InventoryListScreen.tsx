@@ -5,6 +5,8 @@ import React, {
   useState,
 } from 'react';
 
+import { getVehicleImageUrl } from '../utils/imageUtils';
+
 import {
   ActivityIndicator,
   FlatList,
@@ -23,27 +25,52 @@ import { getVehicles } from '../services/vehicleService';
 
 type VehicleImage = {
   url?: string;
+  imageUrl?: string;
   image_url?: string;
+  uri?: string;
+  isPrimary?: boolean;
   is_primary?: boolean;
+  displayOrder?: number;
+  display_order?: number;
 };
 
 type Vehicle = {
   id?: number;
   vehicle_id?: number;
+
   year?: number | string;
   make?: string;
   model?: string;
   trim?: string;
+
   colour?: string;
   color?: string;
+
   interior_colour?: string;
   interior_color?: string;
+
   vin?: string;
+
   price?: number | string;
+  askPrice?: number | string;
+
   mileage?: number | string;
+
   status?: string;
+
   image_url?: string;
   primary_image_url?: string;
+
+  primaryImage?: {
+    url?: string;
+    isPrimary?: boolean;
+  };
+
+  primary_image?: {
+    url?: string;
+    isPrimary?: boolean;
+  };
+
   images?: Array<string | VehicleImage>;
 };
 
@@ -161,32 +188,6 @@ export default function InventoryListScreen({
     return vehicle.id ?? vehicle.vehicle_id;
   };
 
-  const getVehicleImage = (vehicle: Vehicle) => {
-    if (vehicle.primary_image_url) {
-      return vehicle.primary_image_url;
-    }
-
-    if (vehicle.image_url) {
-      return vehicle.image_url;
-    }
-
-    const primaryImage = vehicle.images?.find(image => {
-      return typeof image !== 'string' && image.is_primary;
-    });
-
-    if (primaryImage && typeof primaryImage !== 'string') {
-      return primaryImage.url ?? primaryImage.image_url;
-    }
-
-    const firstImage = vehicle.images?.[0];
-
-    if (typeof firstImage === 'string') {
-      return firstImage;
-    }
-
-    return firstImage?.url ?? firstImage?.image_url;
-  };
-
   const getVehicleTitle = (vehicle: Vehicle) => {
     return [vehicle.year, vehicle.make, vehicle.model]
       .filter(Boolean)
@@ -244,8 +245,8 @@ export default function InventoryListScreen({
     });
   };
 
-  const renderVehicle = ({ item }: { item: Vehicle }) => {
-    const imageUri = getVehicleImage(item);
+    const renderVehicle = ({ item }: { item: Vehicle }) => {
+    const imageUri = getVehicleImageUrl(item);
     const status = item.status?.toLowerCase() ?? 'unknown';
     const mileage = formatMileage(item.mileage);
 
@@ -328,7 +329,7 @@ export default function InventoryListScreen({
             </View>
 
             <Text style={styles.vehiclePrice}>
-              {formatPrice(item.price)}
+              {formatPrice(item.askPrice ?? item.price)}
             </Text>
           </View>
 
