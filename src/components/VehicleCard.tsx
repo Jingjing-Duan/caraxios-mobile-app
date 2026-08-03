@@ -20,10 +20,24 @@ export default function VehicleCard({ vehicle }: Props) {
             <Text style={styles.mileage}>
                 {vehicle.mileage.toLocaleString()} km
             </Text>
-
-            <Text style={styles.status}>
-                Available
+            
+            <View
+            style={[
+                styles.statusBadge,
+                vehicle.status === 'available' && styles.statusBadgeAvailable,
+            ]}
+            >
+            <Text
+                style={[
+                styles.statusText,
+                vehicle.status === 'available' && styles.statusTextAvailable,
+                ]}
+            >
+                {vehicle.status
+                    ? vehicle.status[0].toUpperCase() + vehicle.status.slice(1)
+                    : 'Unknown'}
             </Text>
+            </View>
 
         </View>
     );
@@ -65,6 +79,33 @@ const styles = StyleSheet.create({
 
     status: {
         fontSize: 16,
-        color: 'green',
     },
+    statusAvailable: {
+        color: 'green',
+        fontWeight: '600',
+    },
+
+    statusBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#eee',
+    marginTop: 6,
+    },
+
+    statusBadgeAvailable: {
+    backgroundColor: '#E8F5E9',
+    },
+
+    statusText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#555',
+    },
+
+    statusTextAvailable: {
+    color: '#2E7D32',
+    },
+
 });
