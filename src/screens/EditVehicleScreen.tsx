@@ -3,6 +3,8 @@ import React, {
   useState,
 } from 'react';
 
+import { normalizeImageUrl } from '../utils/imageUtils';
+
 import {
   ActivityIndicator,
   Alert,
@@ -25,14 +27,20 @@ import DraggableFlatList, {
 
 import {
   getVehicleById,
+  getVehicleImages,
   updateVehicle,
+  uploadVehicleImages,
+  deleteVehicleImage,
+  reorderVehicleImages,
 } from '../services/vehicleService';
 
 type VehicleImage = {
+  id?: string | number;
   uri: string;
   isPrimary: boolean;
-  isLocal?: boolean;
-  id?: string | number;
+  isLocal: boolean;
+  fileName?: string;
+  mimeType?: string;
 };
 
 type FormErrors = Record<string, string>;
@@ -112,181 +120,202 @@ export default function EditVehicleScreen({
     loadVehicle();
   }, [vehicleId]);
 
-  const normalizeImages = (
-    vehicle: any
-  ): VehicleImage[] => {
-    const normalizedImages: VehicleImage[] =
-      [];
+const normalizeImages = (
+  vehicle: any
+): VehicleImage[] => {
+  const normalizedImages: VehicleImage[] = [];
 
-    const sourceImages =
-      vehicle.images ??
-      vehicle.vehicle_images ??
-      [];
+  const sourceImages =
+    vehicle.images ??
+    vehicle.vehicle_images ??
+    [];
 
-    if (Array.isArray(sourceImages)) {
-      sourceImages.forEach(
-        (image: any, index: number) => {
-          const uri =
-            typeof image === 'string'
-              ? image
-              : image.url ??
-                image.uri ??
-                image.image_url ??
-                image.imageUrl;
+  if (Array.isArray(sourceImages)) {
+    sourceImages.forEach(
+      (image: any, index: number) => {
+        const rawUri =
+          typeof image === 'string'
+            ? image
+            : image.url ??
+              image.uri ??
+              image.image_url ??
+              image.imageUrl;
 
-          if (!uri) {
-            return;
-          }
+        const uri = normalizeImageUrl(rawUri);
 
-          normalizedImages.push({
-            uri,
-            id:
-              typeof image === 'object'
-                ? image.id
-                : undefined,
-            isPrimary:
-              typeof image === 'object'
-                ? Boolean(
-                    image.isPrimary ??
-                      image.is_primary ??
-                      image.primary
-                  )
-                : index === 0,
-            isLocal: false,
-          });
+        if (!uri) {
+          return;
         }
-      );
-    }
 
-    const primaryImageUrl =
-      vehicle.primary_image_url ??
-      vehicle.primaryImageUrl ??
-      vehicle.image_url ??
-      vehicle.imageUrl;
+        normalizedImages.push({
+          uri,
+          id:
+            typeof image === 'object'
+              ? image.id
+              : undefined,
+          isPrimary:
+            typeof image === 'object'
+              ? Boolean(
+                  image.isPrimary ??
+                    image.is_primary ??
+                    image.primary
+                )
+              : index === 0,
+          isLocal: false,
+        });
+      }
+    );
+  }
 
-    if (
-      primaryImageUrl &&
-      !normalizedImages.some(
-        image =>
-          image.uri === primaryImageUrl
+  const primaryImageUrl =
+    vehicle.primary_image_url ??
+    vehicle.primaryImageUrl ??
+    vehicle.image_url ??
+    vehicle.imageUrl;
+
+  const normalizedPrimaryImageUrl =
+    normalizeImageUrl(primaryImageUrl);
+
+  if (
+    normalizedPrimaryImageUrl &&
+    !normalizedImages.some(
+      image =>
+        image.uri === normalizedPrimaryImageUrl
+    )
+  ) {
+    normalizedImages.unshift({
+      uri: normalizedPrimaryImageUrl,
+      isPrimary: true,
+      isLocal: false,
+    });
+  }
+
+  if (
+    normalizedImages.length > 0 &&
+    !normalizedImages.some(
+      image => image.isPrimary
+    )
+  ) {
+    normalizedImages[0] = {
+      ...normalizedImages[0],
+      isPrimary: true,
+    };
+  }
+
+  return normalizedImages;
+};
+
+const loadVehicle = async () => {
+  try {
+    setLoading(true);
+    setLoadError('');
+
+    const [vehicleResponse, imageResponse] =
+      await Promise.all([
+        getVehicleById(vehicleId),
+        getVehicleImages(vehicleId),
+      ]);
+
+    const vehicle =
+      vehicleResponse.item ??
+      vehicleResponse.vehicle ??
+      vehicleResponse;
+
+    const imageList =
+      imageResponse.items ??
+      imageResponse.images ??
+      imageResponse;
+
+    console.log(
+      'Vehicle loaded for editing:',
+      vehicle
+    );
+
+    console.log(
+      'Vehicle images loaded for editing:',
+      imageList
+    );
+
+    setYear(String(vehicle.year ?? ''));
+    setMake(vehicle.make ?? '');
+    setModel(vehicle.model ?? '');
+    setTrim(vehicle.trim ?? '');
+
+    setBodyType(
+      vehicle.bodyType ??
+        vehicle.body_type ??
+        ''
+    );
+
+    setEngine(
+      vehicle.engineInfo ??
+      vehicle.engine_info ??
+      vehicle.engine ??
+      vehicle.engine_type ??
+      ''
+    );
+
+    setAskPrice(
+      String(
+        vehicle.askPrice ??
+          vehicle.ask_price ??
+          vehicle.price ??
+          ''
       )
-    ) {
-      normalizedImages.unshift({
-        uri: primaryImageUrl,
-        isPrimary: true,
-        isLocal: false,
-      });
-    }
+    );
 
-    if (
-      normalizedImages.length > 0 &&
-      !normalizedImages.some(
-        image => image.isPrimary
-      )
-    ) {
-      normalizedImages[0] = {
-        ...normalizedImages[0],
-        isPrimary: true,
-      };
-    }
+    setMileage(
+      vehicle.mileage === null ||
+        vehicle.mileage === undefined
+        ? ''
+        : String(vehicle.mileage)
+    );
 
-    return normalizedImages;
-  };
+    setVin(vehicle.vin ?? '');
 
-  const loadVehicle = async () => {
-    try {
-      setLoading(true);
-      setLoadError('');
+    setExteriorColor(
+      vehicle.exteriorColor ??
+        vehicle.exterior_color ??
+        vehicle.color ??
+        ''
+    );
 
-      const response =
-        await getVehicleById(vehicleId);
+    setInteriorColor(
+      vehicle.interiorColor ??
+        vehicle.interior_color ??
+        ''
+    );
 
-      const vehicle =
-        response.item ??
-        response.vehicle ??
-        response;
+    setDescription(
+      vehicle.description ?? ''
+    );
 
-      console.log(
-        'Vehicle loaded for editing:',
-        vehicle
-      );
+    setStatus(
+      vehicle.status ?? 'available'
+    );
 
-      setYear(
-        String(vehicle.year ?? '')
-      );
+    setImages(
+      normalizeImages({
+        ...vehicle,
+        images: Array.isArray(imageList)
+          ? imageList
+          : [],
+      })
+    );
+  } catch (error: any) {
+    console.error(
+      'Unable to load vehicle:',
+      error
+    );
 
-      setMake(vehicle.make ?? '');
-      setModel(vehicle.model ?? '');
-      setTrim(vehicle.trim ?? '');
-
-      setBodyType(
-        vehicle.bodyType ??
-          vehicle.body_type ??
-          ''
-      );
-
-      setEngine(
-        vehicle.engine ??
-          vehicle.engine_type ??
-          ''
-      );
-
-      setAskPrice(
-        String(
-          vehicle.askPrice ??
-            vehicle.ask_price ??
-            vehicle.price ??
-            ''
-        )
-      );
-
-      setMileage(
-        vehicle.mileage === null ||
-          vehicle.mileage === undefined
-          ? ''
-          : String(vehicle.mileage)
-      );
-
-      setVin(vehicle.vin ?? '');
-
-      setExteriorColor(
-        vehicle.exteriorColor ??
-          vehicle.exterior_color ??
-          vehicle.color ??
-          ''
-      );
-
-      setInteriorColor(
-        vehicle.interiorColor ??
-          vehicle.interior_color ??
-          ''
-      );
-
-      setDescription(
-        vehicle.description ?? ''
-      );
-
-      setStatus(
-        vehicle.status ?? 'available'
-      );
-
-      setImages(
-        normalizeImages(vehicle)
-      );
-    } catch (error: any) {
-      console.error(
-        'Unable to load vehicle:',
-        error
-      );
-
-      setLoadError(
-        error.message ||
-          'Unable to load vehicle.'
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoadError(
+      error.message ||
+        'Unable to load vehicle.'
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const pickImages = async () => {
     const permission =
@@ -315,16 +344,20 @@ export default function EditVehicleScreen({
       return;
     }
 
-    const selectedImages: VehicleImage[] =
-      result.assets.map(
-        (asset, index) => ({
-          uri: asset.uri,
-          isPrimary:
-            images.length === 0 &&
-            index === 0,
-          isLocal: true,
-        })
-      );
+  const selectedImages: VehicleImage[] =
+    result.assets.map((asset, index) => ({
+      uri: asset.uri,
+      fileName:
+        asset.fileName ??
+        `vehicle-image-${Date.now()}-${index}.jpg`,
+      mimeType:
+        asset.mimeType ?? 'image/jpeg',
+
+      isPrimary:
+        images.length === 0 && index === 0,
+
+      isLocal: true,
+    }));
 
     setImages(current => [
       ...current,
@@ -351,21 +384,25 @@ export default function EditVehicleScreen({
     );
   };
 
-  const removeImage = (
-    index: number
-  ) => {
+const removeImage = async (index: number) => {
+  const imageToRemove = images[index];
+
+  try {
+    if (!imageToRemove.isLocal && imageToRemove.id) {
+      await deleteVehicleImage(
+        vehicleId,
+        imageToRemove.id
+      );
+    }
+
     setImages(current => {
-      const updatedImages =
-        current.filter(
-          (_, imageIndex) =>
-            imageIndex !== index
-        );
+      const updatedImages = current.filter(
+        (_, imageIndex) => imageIndex !== index
+      );
 
       if (
         updatedImages.length > 0 &&
-        !updatedImages.some(
-          image => image.isPrimary
-        )
+        !updatedImages.some(image => image.isPrimary)
       ) {
         updatedImages[0] = {
           ...updatedImages[0],
@@ -375,7 +412,13 @@ export default function EditVehicleScreen({
 
       return updatedImages;
     });
-  };
+  } catch (error: any) {
+    Alert.alert(
+      'Delete Failed',
+      error.message || 'Unable to delete the image.'
+    );
+  }
+};
 
   const validateForm = () => {
     const newErrors: FormErrors = {};
@@ -451,92 +494,162 @@ export default function EditVehicleScreen({
     );
   };
 
-  const handleUpdate = async () => {
-    if (!validateForm()) {
-      return;
-    }
+const handleUpdate = async () => {
+  if (!validateForm()) {
+    return;
+  }
 
-    const updatedVehicle = {
-      year: Number(year),
-      make: make.trim(),
-      model: model.trim(),
+  const updatedVehicle = {
+    year: Number(year),
+    make: make.trim(),
+    model: model.trim(),
 
-      askPrice: Number(askPrice),
+    askPrice: Number(askPrice),
 
-      mileage: mileage.trim()
-        ? Number(mileage)
-        : 0,
+    mileage: mileage.trim()
+      ? Number(mileage)
+      : 0,
 
-      vin: vin.trim()
-        ? vin.trim().toUpperCase()
-        : null,
+    vin: vin.trim()
+      ? vin.trim().toUpperCase()
+      : null,
 
-      description:
-        description.trim() || null,
+    description:
+      description.trim() || null,
 
-      status,
+    status,
 
-      trim: trim.trim() || null,
+    trim: trim.trim() || null,
 
-      bodyType:
-        bodyType.trim() || null,
+    bodyType:
+      bodyType.trim() || null,
 
-      engine:
-        engine.trim() || null,
+    engineInfo:
+      engine.trim() || null,
 
-      color:
-        exteriorColor.trim() || null,
+    color:
+      exteriorColor.trim() || null,
 
-      interiorColor:
-        interiorColor.trim() || null,
-    };
+    interiorColor:
+      interiorColor.trim() || null,
+  };
 
-    try {
-      setSaving(true);
+  try {
+    setSaving(true);
 
-      setErrors(current => ({
-        ...current,
-        general: '',
-      }));
+    setErrors(current => ({
+      ...current,
+      general: '',
+    }));
 
-      console.log(
-        'Updating vehicle:',
-        updatedVehicle
-      );
+    // 1. Update vehicle information
+    await updateVehicle(
+      vehicleId,
+      updatedVehicle
+    );
 
-      console.log(
-        'Current vehicle images:',
-        images
-      );
+    // 2. Upload newly selected local images
+    const newImages = images.filter(
+      image => image.isLocal
+    );
 
-      const result =
-        await updateVehicle(
+    let uploadedImages: any[] = [];
+
+    if (newImages.length > 0) {
+      const uploadResponse =
+        await uploadVehicleImages(
           vehicleId,
-          updatedVehicle
+          newImages
         );
 
-      console.log(
-        'Vehicle updated successfully:',
-        result
-      );
+      const uploadedResult =
+        uploadResponse.items ??
+        uploadResponse.images ??
+        uploadResponse;
 
-      navigation.goBack();
-    } catch (error: any) {
-      console.error(
-        'Update vehicle failed:',
-        error
-      );
-
-      setErrors(current => ({
-        ...current,
-        general:
-          error.message ||
-          'Unable to update the vehicle.',
-      }));
-    } finally {
-      setSaving(false);
+      uploadedImages = Array.isArray(uploadedResult)
+        ? uploadedResult
+        : [];
     }
-  };
+
+    // 3. Replace local images with the uploaded image IDs
+    let uploadedIndex = 0;
+
+    const syncedImages = images.map(image => {
+      if (!image.isLocal) {
+        return image;
+      }
+
+      const uploadedImage =
+        uploadedImages[uploadedIndex];
+
+      uploadedIndex += 1;
+
+      return {
+        ...image,
+        id:
+          uploadedImage?.id ??
+          uploadedImage?.imageId ??
+          uploadedImage?.image_id,
+        uri:
+          uploadedImage?.url ??
+          uploadedImage?.imageUrl ??
+          uploadedImage?.image_url ??
+          image.uri,
+        isLocal: false,
+      };
+    });
+
+    // 4. Build the final image order
+    const orderedImageIds = syncedImages
+      .map(image => image.id)
+      .filter(
+        (
+          id
+        ): id is string | number =>
+          id !== undefined &&
+          id !== null
+      );
+
+    // 5. Find the selected primary image
+    const primaryImage =
+      syncedImages.find(
+        image => image.isPrimary
+      );
+
+    // 6. Save image order and primary image
+    if (
+      orderedImageIds.length > 0 &&
+      primaryImage?.id
+    ) {
+      await reorderVehicleImages(
+        vehicleId,
+        orderedImageIds,
+        primaryImage.id
+      );
+    }
+
+    console.log(
+      'Vehicle and images updated successfully'
+    );
+
+    navigation.goBack();
+  } catch (error: any) {
+    console.error(
+      'Update vehicle failed:',
+      error
+    );
+
+    setErrors(current => ({
+      ...current,
+      general:
+        error.message ||
+        'Unable to update the vehicle.',
+    }));
+  } finally {
+    setSaving(false);
+  }
+};
 
   const handleDiscard = () => {
     Alert.alert(

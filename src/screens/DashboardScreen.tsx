@@ -1,4 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import { getVehicleImageUrl } from '../utils/imageUtils';
+
 import {
   ActivityIndicator,
   Image,
@@ -14,19 +16,43 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { getVehicles } from '../services/vehicleService';
 
+type VehicleImage = {
+  id?: string;
+  url?: string;
+  imageUrl?: string;
+  image_url?: string;
+  uri?: string;
+  isPrimary?: boolean;
+  is_primary?: boolean;
+  displayOrder?: number;
+  display_order?: number;
+};
+
 type Vehicle = {
   id?: number;
   vehicle_id?: number;
+
   year?: number | string;
   make?: string;
   model?: string;
   trim?: string;
   vin?: string;
+
   price?: number | string;
+  askPrice?: number | string;
+  ask_price?: number | string;
+
   status?: string;
+
   image_url?: string;
   primary_image_url?: string;
-  images?: Array<string | { url?: string; image_url?: string }>;
+
+  primaryImage?: VehicleImage;
+  primary_image?: VehicleImage;
+
+  images?: Array<string | VehicleImage>;
+
+  createdAt?: string;
   created_at?: string;
 };
 
@@ -97,10 +123,18 @@ export default function DashboardScreen({ navigation }: any) {
   const recentlyAddedVehicles = useMemo(() => {
     return [...vehicles]
       .sort((firstVehicle, secondVehicle) => {
-        if (firstVehicle.created_at && secondVehicle.created_at) {
+        const firstCreatedAt =
+          firstVehicle.createdAt ??
+          firstVehicle.created_at;
+
+        const secondCreatedAt =
+          secondVehicle.createdAt ??
+          secondVehicle.created_at;
+
+        if (firstCreatedAt && secondCreatedAt) {
           return (
-            new Date(secondVehicle.created_at).getTime() -
-            new Date(firstVehicle.created_at).getTime()
+            new Date(secondCreatedAt).getTime() -
+            new Date(firstCreatedAt).getTime()
           );
         }
 
@@ -128,23 +162,7 @@ export default function DashboardScreen({ navigation }: any) {
       .join(' ');
   };
 
-  const getVehicleImage = (vehicle: Vehicle) => {
-    if (vehicle.primary_image_url) {
-      return vehicle.primary_image_url;
-    }
 
-    if (vehicle.image_url) {
-      return vehicle.image_url;
-    }
-
-    const firstImage = vehicle.images?.[0];
-
-    if (typeof firstImage === 'string') {
-      return firstImage;
-    }
-
-    return firstImage?.url ?? firstImage?.image_url;
-  };
 
   const formatPrice = (price?: number | string) => {
     const numericPrice = Number(price);
@@ -366,7 +384,7 @@ export default function DashboardScreen({ navigation }: any) {
           >
             {recentlyAddedVehicles.map((vehicle, index) => {
               const vehicleId = getVehicleId(vehicle);
-              const imageUri = getVehicleImage(vehicle);
+              const imageUri = getVehicleImageUrl(vehicle);
               const status =
                 vehicle.status?.toLowerCase() ?? 'unknown';
 
@@ -433,7 +451,11 @@ export default function DashboardScreen({ navigation }: any) {
                       </Text>
 
                       <Text style={styles.vehiclePrice}>
-                        {formatPrice(vehicle.price)}
+                        {formatPrice(
+                          vehicle.askPrice ??
+                          vehicle.ask_price ??
+                          vehicle.price
+                        )}
                       </Text>
                     </View>
                   </View>

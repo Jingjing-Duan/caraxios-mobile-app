@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -22,11 +22,14 @@ import DraggableFlatList, {
 import {
   createVehicle,
   decodeVin,
+  uploadVehicleImages,
 } from '../services/vehicleService';
 
 type VehicleImage = {
   uri: string;
   isPrimary: boolean;
+  fileName?: string;
+  mimeType?: string;
 };
 
 type FormErrors = Record<string, string>;
@@ -50,6 +53,7 @@ const COLORS = {
 
 export default function CreateVehicleScreen({
   navigation,
+  route,
 }: any) {
   const [year, setYear] = useState('');
   const [make, setMake] = useState('');
@@ -84,6 +88,38 @@ export default function CreateVehicleScreen({
   const [vinDecoded, setVinDecoded] =
     useState(false);
 
+  const aiDraft = route.params?.aiDraft;
+  useEffect(() => {
+    if (!aiDraft) {
+      return;
+    }
+
+    setYear(
+      aiDraft.year != null
+        ? String(aiDraft.year)
+        : ''
+    );
+
+    setMake(aiDraft.make ?? '');
+    setModel(aiDraft.model ?? '');
+
+    setAskPrice(
+      aiDraft.askPrice != null
+        ? String(aiDraft.askPrice)
+        : aiDraft.ask_price != null
+          ? String(aiDraft.ask_price)
+          : ''
+    );
+
+    if (aiDraft.vin) {
+      setVin(aiDraft.vin);
+    }
+
+    if (aiDraft.description) {
+      setDescription(aiDraft.description);
+    }
+  }, [aiDraft]);
+
   const pickImages = async () => {
     const permission =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -112,6 +148,14 @@ export default function CreateVehicleScreen({
     const selectedImages: VehicleImage[] =
       result.assets.map((asset, index) => ({
         uri: asset.uri,
+
+        fileName:
+          asset.fileName ??
+          `vehicle-image-${Date.now()}-${index}.jpg`,
+
+        mimeType:
+          asset.mimeType ?? 'image/jpeg',
+
         isPrimary:
           images.length === 0 && index === 0,
       }));
@@ -321,12 +365,11 @@ export default function CreateVehicleScreen({
         ? vin.trim().toUpperCase()
         : null,
 
-      description: description.trim() || null,
+      description:
+        description.trim() || null,
 
       status: 'available',
 
-      // Add these fields only when the backend
-      // VehicleCreate schema supports them.
       trim: trim.trim() || null,
       bodyType: bodyType.trim() || null,
       engine: engine.trim() || null,
@@ -344,15 +387,11 @@ export default function CreateVehicleScreen({
       }));
 
       console.log(
-        'Sending vehicle:',
+        'Creating vehicle:',
         vehicle
       );
 
-      console.log(
-        'Selected local images:',
-        images
-      );
-
+      // Step 1: Create the vehicle first
       const createdVehicle =
         await createVehicle(vehicle);
 
@@ -361,8 +400,46 @@ export default function CreateVehicleScreen({
         createdVehicle
       );
 
-      navigation.replace('Inventory', {
-        statusFilter: 'all',
+      // Support different possible backend response shapes
+      const createdVehicleData =
+        createdVehicle.item ??
+        createdVehicle.vehicle ??
+        createdVehicle;
+
+      const createdVehicleId =
+        createdVehicleData.id ??
+        createdVehicleData.vehicleId ??
+        createdVehicleData.vehicle_id;
+
+      if (!createdVehicleId) {
+        throw new Error(
+          'Vehicle was created, but the returned vehicle ID is missing.'
+        );
+      }
+
+      // Step 2: Upload selected images
+      if (images.length > 0) {
+        console.log(
+          'Uploading vehicle images:',
+          images
+        );
+
+        await uploadVehicleImages(
+          Number(createdVehicleId),
+          images
+        );
+
+        console.log(
+          'Vehicle images uploaded successfully'
+        );
+      }
+
+      // Step 3: Open All Inventory
+      navigation.navigate('MainTabs', {
+        screen: 'Inventory',
+        params: {
+          statusFilter: 'all',
+        },
       });
     } catch (error: any) {
       console.error(
@@ -380,7 +457,6 @@ export default function CreateVehicleScreen({
       setSaving(false);
     }
   };
-
   const renderImageItem = ({
     item,
     drag,
