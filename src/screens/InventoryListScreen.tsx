@@ -107,6 +107,9 @@ export default function InventoryListScreen({
   const statusFilter =
     route.params?.statusFilter?.toLowerCase() ?? 'all';
 
+
+  const aiVehicles = route.params?.aiVehicles as Vehicle[] | undefined;
+  const sourceVehicles = aiVehicles ?? vehicles;  
   const loadVehicles = async () => {
     try {
       setLoading(true);
@@ -136,6 +139,14 @@ export default function InventoryListScreen({
   );
 
   useEffect(() => {
+    if (aiVehicles) {
+      navigation.setOptions({
+        title: 'Search Results',
+      });
+
+      return;
+    }
+
     let title = 'All Inventory';
 
     if (statusFilter === 'available') {
@@ -148,15 +159,13 @@ export default function InventoryListScreen({
       title = 'Inactive Vehicles';
     }
 
-    navigation.setOptions({
-      title,
-    });
-  }, [navigation, statusFilter]);
+    navigation.setOptions({ title });
+  }, [navigation, statusFilter, aiVehicles]);
 
   const filteredVehicles = useMemo(() => {
     const keyword = searchText.trim().toLowerCase();
 
-    return vehicles.filter(vehicle => {
+    return sourceVehicles.filter(vehicle => {
       const searchableText = [
         vehicle.year,
         vehicle.make,
@@ -171,7 +180,8 @@ export default function InventoryListScreen({
         .toLowerCase();
 
       const matchesSearch =
-        keyword.length === 0 || searchableText.includes(keyword);
+        keyword.length === 0 ||
+        searchableText.includes(keyword);
 
       const vehicleStatus =
         vehicle.status?.toLowerCase() ?? '';
@@ -182,7 +192,7 @@ export default function InventoryListScreen({
 
       return matchesSearch && matchesStatus;
     });
-  }, [vehicles, searchText, statusFilter]);
+  }, [sourceVehicles, searchText, statusFilter]);
 
   const getVehicleId = (vehicle: Vehicle) => {
     return vehicle.id ?? vehicle.vehicle_id;
@@ -378,8 +388,8 @@ export default function InventoryListScreen({
     );
   };
 
-  if (loading) {
-    return (
+if (loading && !aiVehicles) {
+      return (
       <View style={styles.centeredContainer}>
         <ActivityIndicator
           size="large"
@@ -393,7 +403,7 @@ export default function InventoryListScreen({
     );
   }
 
-  if (error) {
+ if (error && !aiVehicles) {
     return (
       <View style={styles.centeredContainer}>
         <Ionicons

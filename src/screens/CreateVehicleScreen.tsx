@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import {
   ActivityIndicator,
@@ -53,6 +53,7 @@ const COLORS = {
 
 export default function CreateVehicleScreen({
   navigation,
+  route,
 }: any) {
   const [year, setYear] = useState('');
   const [make, setMake] = useState('');
@@ -86,6 +87,38 @@ export default function CreateVehicleScreen({
   const [saving, setSaving] = useState(false);
   const [vinDecoded, setVinDecoded] =
     useState(false);
+
+  const aiDraft = route.params?.aiDraft;
+  useEffect(() => {
+    if (!aiDraft) {
+      return;
+    }
+
+    setYear(
+      aiDraft.year != null
+        ? String(aiDraft.year)
+        : ''
+    );
+
+    setMake(aiDraft.make ?? '');
+    setModel(aiDraft.model ?? '');
+
+    setAskPrice(
+      aiDraft.askPrice != null
+        ? String(aiDraft.askPrice)
+        : aiDraft.ask_price != null
+          ? String(aiDraft.ask_price)
+          : ''
+    );
+
+    if (aiDraft.vin) {
+      setVin(aiDraft.vin);
+    }
+
+    if (aiDraft.description) {
+      setDescription(aiDraft.description);
+    }
+  }, [aiDraft]);
 
   const pickImages = async () => {
     const permission =

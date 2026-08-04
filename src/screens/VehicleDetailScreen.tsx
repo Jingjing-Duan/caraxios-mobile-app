@@ -452,7 +452,7 @@ export default function VehicleDetailScreen({
                 <Image
                   source={{ uri: item }}
                   style={styles.galleryImage}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               )}
             />

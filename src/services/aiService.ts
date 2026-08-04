@@ -1,44 +1,165 @@
-const AI_API_BASE_URL = "http://127.0.0.1:8001";
+const AI_API_BASE_URL = 'http://127.0.0.1:8001';
 
 export interface VehicleDraft {
     make?: string | null;
     model?: string | null;
     year?: number | null;
     askPrice?: number | null;
+    ask_price?: number | null;
     status?: string | null;
     vin?: string | null;
     color?: string | null;
 }
 
-export interface AICreateVehicleResponse {
-    conversation_id: string;
-    status: 'needs_info' | 'ready_to_confirm' | 'completed' | string;
-    message: string;
-    missing_fields?: string[];
-    vehicle_draft?: VehicleDraft;
+export interface SearchVehicleResult {
+    id: number;
+    year?: number;
+    make?: string;
+    model?: string;
+    askPrice?: number;
+    mileage?: number;
+    status?: string;
+    primaryImage?: {
+        url?: string;
+    } | null;
 }
 
-export const sendVehicleCreateText = async (
+export interface AIResponse {
+    conversation_id: string;
+    status: string;
+    message: string;
+    transcript?: string;
+    missing_fields?: string[];
+    vehicle_draft?: VehicleDraft;
+
+    filters?: Record<string, unknown>;
+    results?: SearchVehicleResult[];
+    total?: number;
+    page?: number;
+    page_size?: number;
+}
+
+async function parseResponse(
+    response: Response
+): Promise<AIResponse> {
+    const data = await response.json().catch(() => null);
+
+    if (!response.ok) {
+        const message =
+            data?.error?.message ||
+            data?.detail ||
+            data?.message ||
+            `AI request failed with status ${response.status}.`;
+
+        throw new Error(message);
+    }
+
+    return data;
+}
+
+async function sendTextRequest(
+    endpoint: string,
     text: string,
     conversationId: string
-): Promise<AICreateVehicleResponse> => {
+): Promise<AIResponse> {
     const formData = new FormData();
 
     formData.append('text', text);
     formData.append('conversation_id', conversationId);
 
     const response = await fetch(
-        `${AI_API_BASE_URL}/api/v1/agent/voice/create`,
+        `${AI_API_BASE_URL}${endpoint}`,
         {
             method: 'POST',
             body: formData,
         }
     );
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'AI request failed.');
+    return parseResponse(response);
+}
+
+async function sendAudioRequest(
+    endpoint: string,
+    audioUri: string,
+    conversationId: string
+): Promise<AIResponse> {
+    const formData = new FormData();
+
+    formData.append('conversation_id', conversationId);
+
+    // Expo Web 录音通常返回 blob: URL
+    if (audioUri.startsWith('blob:')) {
+        const audioResponse = await fetch(audioUri);
+        const audioBlob = await audioResponse.blob();
+
+        formData.append(
+            'audio',
+            audioBlob,
+            'vehicle-command.webm'
+        );
+    } else {
+        // Android / iOS 本地文件 URI
+        formData.append(
+            'audio',
+            {
+                uri: audioUri,
+                name: 'vehicle-command.m4a',
+                type: 'audio/m4a',
+            } as any
+        );
     }
 
-    return response.json();
-};
+    const response = await fetch(
+        `${AI_API_BASE_URL}${endpoint}`,
+        {
+            method: 'POST',
+            body: formData,
+        }
+    );
+
+    return parseResponse(response);
+}
+
+export function sendVehicleCreateText(
+    text: string,
+    conversationId: string
+): Promise<AIResponse> {
+    return sendTextRequest(
+        '/api/v1/agent/voice/create',
+        text,
+        conversationId
+    );
+}
+
+export function sendVehicleSearchText(
+    text: string,
+    conversationId: string
+): Promise<AIResponse> {
+    return sendTextRequest(
+        '/api/v1/agent/voice/search',
+        text,
+        conversationId
+    );
+}
+
+export function sendVehicleCreateAudio(
+    audioUri: string,
+    conversationId: string
+): Promise<AIResponse> {
+    return sendAudioRequest(
+        '/api/v1/agent/voice/create',
+        audioUri,
+        conversationId
+    );
+}
+
+export function sendVehicleSearchAudio(
+    audioUri: string,
+    conversationId: string
+): Promise<AIResponse> {
+    return sendAudioRequest(
+        '/api/v1/agent/voice/search',
+        audioUri,
+        conversationId
+    );
+}
