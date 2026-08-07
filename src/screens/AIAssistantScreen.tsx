@@ -42,6 +42,37 @@ const CREATE_CONVERSATION_ID =
 const SEARCH_CONVERSATION_ID =
     '550e8400-e29b-41d4-a716-446655440012';
 
+const FIELD_LABELS: Record<string, string> = {
+  year: 'Year',
+  make: 'Make',
+  model: 'Model',
+  trim: 'Trim',
+  vin: 'VIN',
+  askPrice: 'Ask Price',
+  ask_price: 'Ask Price',
+  stockNumber: 'Stock Number',
+  mileage: 'Mileage',
+  isKm: 'Mileage Unit',
+  status: 'Status',
+  condition: 'Condition',
+  certified: 'Certified',
+  color: 'Exterior Color',
+  interiorColor: 'Interior Color',
+  numberDoors: 'Doors',
+  numberSeats: 'Seats',
+  engineSize: 'Engine Size',
+  engineInfo: 'Engine',
+  engineCylinders: 'Cylinders',
+  transmission: 'Transmission',
+  transmissionInfo: 'Transmission Info',
+  fuelType: 'Fuel Type',
+  bodyType: 'Body Type',
+  drivetrain: 'Drivetrain',
+  fuelEconomyCity: 'City Fuel Economy',
+  fuelEconomyHighway: 'Highway Fuel Economy',
+  displayFuelEconomy: 'Fuel Economy',
+  description: 'Description',
+};
 
 
 export default function AIAssistantScreen({ navigation }: any) {
@@ -308,6 +339,7 @@ const handleVoice = async () => {
         );
     }
 
+    const vehicleDraft = latestResult?.vehicle_draft;
     return (
         <View style={styles.container}>
             <View style={styles.topBar}>
@@ -421,58 +453,49 @@ const handleVoice = async () => {
                     </View>
                 ) : null}
 
-                {latestResult?.vehicle_draft ? (
+                {vehicleDraft ? (
                     <View style={styles.resultCard}>
                         <Text style={styles.resultCardTitle}>
                             Vehicle Draft
                         </Text>
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Year
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.year ?? '-'}
-                            </Text>
-                        </View>
+                        {Object.entries(vehicleDraft ?? {})
+                            .filter(([key, value]) => {
+                                if (
+                                    value === null ||
+                                    value === undefined ||
+                                    value === ''
+                                ) {
+                                    return false;
+                                }
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Make
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.make ?? '-'}
-                            </Text>
-                        </View>
+                                if (
+                                    key === 'ask_price' &&
+                                    vehicleDraft.askPrice != null
+                                ) {
+                                    return false;
+                                }
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Model
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.model ?? '-'}
-                            </Text>
-                        </View>
+                                return true;
+                            })
+                            .map(([key, value]) => (
+                                <View
+                                    key={key}
+                                    style={styles.resultRow}
+                                >
+                                    <Text style={styles.resultLabel}>
+                                        {FIELD_LABELS[key] ?? key}
+                                    </Text>
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Ask Price
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.askPrice ??
-                                    latestResult.vehicle_draft.ask_price ??
-                                    '-'}
-                            </Text>
-                        </View>
-
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Status
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.status ?? '-'}
-                            </Text>
-                        </View>
+                                    <Text style={styles.resultValue}>
+                                        {typeof value === 'boolean'
+                                            ? value
+                                                ? 'Yes'
+                                                : 'No'
+                                            : String(value)}
+                                    </Text>
+                                </View>
+                            ))}
 
                         <View style={styles.statusBadge}>
                             <Text style={styles.statusBadgeText}>
@@ -483,12 +506,12 @@ const handleVoice = async () => {
                 ) : null}
 
                 {latestResult?.status === 'ready_to_confirm' &&
-                latestResult.vehicle_draft ? (
+                vehicleDraft ? (
                     <Pressable
                         style={styles.primaryActionButton}
                         onPress={() =>
                             navigation.navigate('CreateVehicle', {
-                                aiDraft: latestResult.vehicle_draft,
+                                aiDraft: vehicleDraft,
                             })
                         }
                     >
