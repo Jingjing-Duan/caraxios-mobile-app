@@ -36,12 +36,6 @@ type ChatMessage = {
     text: string;
 };
 
-const CREATE_CONVERSATION_ID =
-    '550e8400-e29b-41d4-a716-446655440011';
-
-const SEARCH_CONVERSATION_ID =
-    '550e8400-e29b-41d4-a716-446655440012';
-
 const FIELD_LABELS: Record<string, string> = {
   year: 'Year',
   make: 'Make',
@@ -86,6 +80,11 @@ export default function AIAssistantScreen({ navigation }: any) {
     const recorder = useAudioRecorder(
         RecordingPresets.HIGH_QUALITY
     );
+    const [createConversationId, setCreateConversationId] =
+    useState(crypto.randomUUID());
+
+    const [searchConversationId, setSearchConversationId] =
+    useState(crypto.randomUUID());
 
     const [isRecording, setIsRecording] = useState(false);
     const selectMode = (selectedMode: AssistantMode) => {
@@ -97,6 +96,8 @@ export default function AIAssistantScreen({ navigation }: any) {
 
 
         if (selectedMode === 'create') {
+            setCreateConversationId(crypto.randomUUID());
+
             setMessages([
                 {
                     id: 'welcome-create',
@@ -107,6 +108,8 @@ export default function AIAssistantScreen({ navigation }: any) {
         }
 
         if (selectedMode === 'search') {
+            setSearchConversationId(crypto.randomUUID());
+
             setMessages([
                 {
                     id: 'welcome-search',
@@ -144,11 +147,11 @@ export default function AIAssistantScreen({ navigation }: any) {
                 mode === 'create'
                     ? await sendVehicleCreateChat(
                           text,
-                          CREATE_CONVERSATION_ID
+                          createConversationId
                       )
                     : await sendVehicleSearchChat(
                           text,
-                          SEARCH_CONVERSATION_ID
+                          searchConversationId
                       );
 
 console.log('RAW AI RESULT:', result);
@@ -225,11 +228,11 @@ const handleVoice = async () => {
             mode === 'create'
                 ? await sendVehicleCreateAudio(
                       audioUri,
-                      CREATE_CONVERSATION_ID
+                      createConversationId
                   )
                 : await sendVehicleSearchAudio(
                       audioUri,
-                      SEARCH_CONVERSATION_ID
+                      searchConversationId
                   );
 
         console.log('Voice AI result:', result);

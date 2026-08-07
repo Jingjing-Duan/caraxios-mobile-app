@@ -65,12 +65,16 @@ type Vehicle = {
   interior_color?: string;
   bodyType?: string;
   body_type?: string;
-  drivetrain?: string;
   engineInfo?: string;
   engine_info?: string;
   engine?: string;
   engine_type?: string;
   transmission?: string;
+  transmissionInfo?: string;
+  transmission_info?: string;
+  drivetrain?: string;
+  driveTrain?: string;
+  drive_train?: string;
   image_url?: string;
   primary_image_url?: string;
   images?: Array<string | VehicleImage>;
@@ -566,7 +570,10 @@ export default function VehicleDetailScreen({
             <SpecificationCard
               label="Transmission"
               value={
-                vehicle.transmission || 'Not provided'
+                vehicle.transmission ??
+                vehicle.transmissionInfo ??
+                vehicle.transmission_info ??
+                'Not provided'
               }
               icon="git-compare-outline"
             />
@@ -602,7 +609,10 @@ export default function VehicleDetailScreen({
             <SpecificationCard
               label="Drivetrain"
               value={
-                vehicle.drivetrain || 'Not provided'
+                vehicle.drivetrain ??
+                vehicle.driveTrain ??
+                vehicle.drive_train ??
+                'Not provided'
               }
               icon="cog-outline"
             />

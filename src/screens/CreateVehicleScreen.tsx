@@ -88,7 +88,9 @@ export default function CreateVehicleScreen({
   const [vinDecoded, setVinDecoded] =
     useState(false);
 
-const aiDraft = route.params?.aiDraft;
+  const aiDraft = route.params?.aiDraft;
+  const [transmission, setTransmission] = useState('');
+  const [drivetrain, setDrivetrain] = useState('');
 
 useEffect(() => {
   if (!aiDraft) {
@@ -144,7 +146,19 @@ useEffect(() => {
     aiDraft.interior_color ??
     ''
   );
+  setTransmission(
+    aiDraft.transmission ??
+    aiDraft.transmissionInfo ??
+    aiDraft.transmission_info ??
+    ''
+  );
 
+  setDrivetrain(
+    aiDraft.drivetrain ??
+    aiDraft.driveTrain ??
+    aiDraft.drive_train ??
+    ''
+  );
   setDescription(
     aiDraft.description ?? ''
   );
@@ -399,7 +413,8 @@ useEffect(() => {
         description.trim() || null,
 
       status: 'available',
-
+      transmission: transmission.trim() || null,
+      drivetrain: drivetrain.trim() || null,
       trim: trim.trim() || null,
       bodyType: bodyType.trim() || null,
       engine: engine.trim() || null,
@@ -817,6 +832,23 @@ useEffect(() => {
               containerStyle={
                 styles.halfField
               }
+            />
+          </View>
+          <View style={styles.twoColumnRow}>
+            <FormField
+              label="Transmission"
+              value={transmission}
+              onChangeText={setTransmission}
+              placeholder="10-speed automatic"
+              containerStyle={styles.halfField}
+            />
+
+            <FormField
+              label="Drivetrain"
+              value={drivetrain}
+              onChangeText={setDrivetrain}
+              placeholder="Four-wheel drive"
+              containerStyle={styles.halfField}
             />
           </View>
         </FormSection>
