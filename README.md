@@ -128,16 +128,24 @@ http://localhost:8000
 
 ## AI Backend
 
-Base URL
+Base URL:
 
 ```text
-http://localhost:8001
+http://127.0.0.1:8000/api/v1
 ```
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/v1/agent/chat/create | AI-assisted vehicle creation (text) |
-| POST | /api/v1/agent/chat/search | AI-assisted inventory search (text) |
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/vehicles` | Get all vehicles |
+| GET | `/vehicles/{vehicleId}` | Get vehicle details |
+| POST | `/vehicles` | Create a new vehicle |
+| PATCH | `/vehicles/{vehicleId}` | Update an existing vehicle |
+| POST | `/vin/decode` | Decode a VIN and return vehicle information |
+| POST | `/vehicles/{vehicleId}/images` | Upload one or more vehicle images |
+| GET | `/vehicles/{vehicleId}/images` | Get all images for a vehicle |
+| PATCH | `/vehicles/{vehicleId}/images/{imageId}` | Update image properties such as primary image, display order, or caption |
+| DELETE | `/vehicles/{vehicleId}/images/{imageId}` | Delete a vehicle image |
+| PUT | `/vehicles/{vehicleId}/images/order` | Reorder images and set the primary image |
 
 ---
 
