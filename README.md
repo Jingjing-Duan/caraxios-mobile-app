@@ -189,6 +189,17 @@ Example Response
 
 ## AI Search
 
+Base URL:
+
+```text
+http://127.0.0.1:8001
+```
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/v1/agent/chat/create` | Create vehicle using JSON-based chat |
+| POST | `/api/v1/agent/chat/search` | Search inventory using JSON-based chat |
+
 Request
 
 ```http
