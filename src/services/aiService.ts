@@ -9,6 +9,18 @@ export interface VehicleDraft {
     status?: string | null;
     vin?: string | null;
     color?: string | null;
+    trim?: string | null;
+    mileage?: number | null;
+    interiorColor?: string | null;
+    interior_color?: string | null;
+    bodyType?: string | null;
+    body_type?: string | null;
+    engineInfo?: string | null;
+    engine_info?: string | null;
+    fuelType?: string | null;
+    transmission?: string | null;
+    drivetrain?: string | null;
+    description?: string | null;
 }
 
 export interface SearchVehicleResult {
@@ -162,4 +174,46 @@ export function sendVehicleSearchAudio(
         audioUri,
         conversationId
     );
+}
+
+export async function sendVehicleCreateChat(
+  message: string,
+  conversationId: string
+): Promise<AIResponse> {
+  const response = await fetch(
+    `${AI_API_BASE_URL}/api/v1/agent/chat/create`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        message,
+      }),
+    }
+  );
+
+  return parseResponse(response);
+}
+
+export async function sendVehicleSearchChat(
+  message: string,
+  conversationId: string
+): Promise<AIResponse> {
+  const response = await fetch(
+    `${AI_API_BASE_URL}/api/v1/agent/chat/search`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        conversation_id: conversationId,
+        message,
+      }),
+    }
+  );
+
+  return parseResponse(response);
 }

@@ -88,37 +88,67 @@ export default function CreateVehicleScreen({
   const [vinDecoded, setVinDecoded] =
     useState(false);
 
-  const aiDraft = route.params?.aiDraft;
-  useEffect(() => {
-    if (!aiDraft) {
-      return;
-    }
+const aiDraft = route.params?.aiDraft;
 
-    setYear(
-      aiDraft.year != null
-        ? String(aiDraft.year)
+useEffect(() => {
+  if (!aiDraft) {
+    return;
+  }
+
+  setYear(
+    aiDraft.year != null
+      ? String(aiDraft.year)
+      : ''
+  );
+
+  setMake(aiDraft.make ?? '');
+
+  setModel(aiDraft.model ?? '');
+
+  setTrim(aiDraft.trim ?? '');
+
+  setBodyType(
+    aiDraft.bodyType ??
+    aiDraft.body_type ??
+    ''
+  );
+
+  setEngine(
+    aiDraft.engineInfo ??
+    aiDraft.engine_info ??
+    ''
+  );
+
+  setAskPrice(
+    aiDraft.askPrice != null
+      ? String(aiDraft.askPrice)
+      : aiDraft.ask_price != null
+        ? String(aiDraft.ask_price)
         : ''
-    );
+  );
 
-    setMake(aiDraft.make ?? '');
-    setModel(aiDraft.model ?? '');
+  setMileage(
+    aiDraft.mileage != null
+      ? String(aiDraft.mileage)
+      : ''
+  );
 
-    setAskPrice(
-      aiDraft.askPrice != null
-        ? String(aiDraft.askPrice)
-        : aiDraft.ask_price != null
-          ? String(aiDraft.ask_price)
-          : ''
-    );
+  setVin(aiDraft.vin ?? '');
 
-    if (aiDraft.vin) {
-      setVin(aiDraft.vin);
-    }
+  setExteriorColor(
+    aiDraft.color ?? ''
+  );
 
-    if (aiDraft.description) {
-      setDescription(aiDraft.description);
-    }
-  }, [aiDraft]);
+  setInteriorColor(
+    aiDraft.interiorColor ??
+    aiDraft.interior_color ??
+    ''
+  );
+
+  setDescription(
+    aiDraft.description ?? ''
+  );
+}, [aiDraft]);
 
   const pickImages = async () => {
     const permission =

@@ -24,6 +24,8 @@ import {
     sendVehicleSearchText,
     sendVehicleCreateAudio,
     sendVehicleSearchAudio,
+    sendVehicleCreateChat,
+    sendVehicleSearchChat
 } from '../services/aiService';
 
 type AssistantMode = 'create' | 'search' | null;
@@ -109,14 +111,19 @@ export default function AIAssistantScreen({ navigation }: any) {
         try {
             const result =
                 mode === 'create'
-                    ? await sendVehicleCreateText(
+                    ? await sendVehicleCreateChat(
                           text,
                           CREATE_CONVERSATION_ID
                       )
-                    : await sendVehicleSearchText(
+                    : await sendVehicleSearchChat(
                           text,
                           SEARCH_CONVERSATION_ID
                       );
+
+console.log('RAW AI RESULT:', result);
+console.log('AI MESSAGE:', result.message);
+console.log('MISSING FIELDS:', result.missing_fields);
+console.log('VEHICLE DRAFT:', result.vehicle_draft);
 
             setLatestResult(result);
 
