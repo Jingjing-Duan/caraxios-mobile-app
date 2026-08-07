@@ -107,37 +107,37 @@ http://localhost:8081
 
 ## Vehicle Backend
 
-Default local address:
+Base URL
 
 ```text
 http://localhost:8000
 ```
 
-Provides:
-
-- Vehicle CRUD
-- VIN Decoding
-- Vehicle Images
-- Inventory Search
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /api/vehicles | Get all vehicles |
+| GET | /api/vehicles/{id} | Get vehicle details |
+| POST | /api/vehicles | Create a new vehicle |
+| PUT | /api/vehicles/{id} | Update a vehicle |
+| DELETE | /api/vehicles/{id} | Delete a vehicle |
+| POST | /api/vin/decode | Decode VIN and return vehicle information |
+| POST | /api/vehicles/{id}/images | Upload vehicle images |
+| PUT | /api/vehicles/{id}/images/reorder | Update image display order |
 
 ---
 
 ## AI Backend
 
-Default local address:
+Base URL
 
 ```text
 http://localhost:8001
 ```
 
-Main endpoints:
-
-```http
-POST /api/v1/agent/chat/create
-POST /api/v1/agent/chat/search
-```
-
-These endpoints accept multipart/form-data requests containing either text or audio.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | /api/v1/agent/chat/create | AI-assisted vehicle creation (text) |
+| POST | /api/v1/agent/chat/search | AI-assisted inventory search (text) |
 
 ---
 
