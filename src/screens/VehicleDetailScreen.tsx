@@ -4,6 +4,7 @@ import React, {
   useState,
 } from 'react';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
 import {
@@ -372,7 +373,7 @@ export default function VehicleDetailScreen({
     .join(' • ');
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -658,7 +659,7 @@ export default function VehicleDetailScreen({
           />
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

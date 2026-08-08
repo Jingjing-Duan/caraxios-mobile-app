@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Image,
@@ -602,7 +602,7 @@ useEffect(() => {
   };
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={
@@ -1070,7 +1070,7 @@ useEffect(() => {
           </Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

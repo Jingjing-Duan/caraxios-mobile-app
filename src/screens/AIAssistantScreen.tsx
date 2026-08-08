@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     ActivityIndicator,
     Pressable,
@@ -17,6 +18,8 @@ import {
     RecordingPresets,
 } from 'expo-audio';
 
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
     AIResponse,
@@ -81,10 +84,10 @@ export default function AIAssistantScreen({ navigation }: any) {
         RecordingPresets.HIGH_QUALITY
     );
     const [createConversationId, setCreateConversationId] =
-    useState(crypto.randomUUID());
+    useState(() => uuidv4());
 
     const [searchConversationId, setSearchConversationId] =
-    useState(crypto.randomUUID());
+    useState(() => uuidv4());
 
     const [isRecording, setIsRecording] = useState(false);
     const selectMode = (selectedMode: AssistantMode) => {
@@ -96,7 +99,7 @@ export default function AIAssistantScreen({ navigation }: any) {
 
 
         if (selectedMode === 'create') {
-            setCreateConversationId(crypto.randomUUID());
+            setCreateConversationId(uuidv4());
 
             setMessages([
                 {
@@ -108,7 +111,7 @@ export default function AIAssistantScreen({ navigation }: any) {
         }
 
         if (selectedMode === 'search') {
-            setSearchConversationId(crypto.randomUUID());
+            setSearchConversationId(uuidv4());
 
             setMessages([
                 {
@@ -278,7 +281,7 @@ const handleVoice = async () => {
 
     if (!mode) {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.welcomeHeader}>
                     <View style={styles.robotAvatar}>
                         <MaterialCommunityIcons
@@ -338,13 +341,13 @@ const handleVoice = async () => {
 
                     <Text style={styles.arrow}>›</Text>
                 </Pressable>
-            </View>
+            </SafeAreaView>
         );
     }
 
     const vehicleDraft = latestResult?.vehicle_draft;
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.topBar}>
                 <Pressable
                     style={styles.changeModeButton}
@@ -613,7 +616,7 @@ const handleVoice = async () => {
                     <Text style={styles.sendIconText}>➤</Text>
                 </Pressable>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
