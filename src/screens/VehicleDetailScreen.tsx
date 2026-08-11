@@ -119,6 +119,7 @@ export default function VehicleDetailScreen({
   const [vehicleImages, setVehicleImages] =
     useState<VehicleImage[]>([]);
   const galleryRef = useRef<FlatList<string>>(null);
+  const [galleryWidth, setGalleryWidth] = useState(0);
 
   const loadVehicle = async () => {
     try {
@@ -265,7 +266,8 @@ export default function VehicleDetailScreen({
     event: NativeSyntheticEvent<NativeScrollEvent>
   ) => {
     const index = Math.round(
-      event.nativeEvent.contentOffset.x / SCREEN_WIDTH
+      event.nativeEvent.contentOffset.x /
+        (galleryWidth || 1)
     );
 
     setActiveImageIndex(index);
@@ -441,7 +443,14 @@ export default function VehicleDetailScreen({
         </View>
 
         {/* Image Gallery */}
-        <View style={styles.galleryContainer}>
+        <View
+          style={styles.galleryContainer}
+          onLayout={event => {
+            setGalleryWidth(
+              event.nativeEvent.layout.width
+            );
+          }}
+        >
           {images.length > 0 ? (
             <FlatList
               ref={galleryRef}
@@ -454,11 +463,18 @@ export default function VehicleDetailScreen({
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={handleImageScroll}
               renderItem={({ item }) => (
-                <Image
-                  source={{ uri: item }}
-                  style={styles.galleryImage}
-                  resizeMode="contain"
-                />
+                <View
+                  style={{
+                    width: galleryWidth,
+                    height: 310,
+                  }}
+                >
+                  <Image
+                    source={{ uri: item }}
+                    style={styles.galleryImage}
+                    resizeMode="contain"
+                  />
+                </View>
               )}
             />
           ) : (
@@ -789,10 +805,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.softSurface,
   },
 
-  galleryImage: {
-    width: SCREEN_WIDTH,
-    height: 310,
-  },
+galleryImage: {
+  width: '100%',
+  height: '100%',
+},
 
   imagePlaceholder: {
     flex: 1,

@@ -9,7 +9,10 @@ import {
     Text,
     TextInput,
     View,
+    Platform,
 } from 'react-native';
+
+import * as FileSystem from 'expo-file-system/legacy';
 
 import {
     requestRecordingPermissionsAsync,
@@ -91,6 +94,91 @@ export default function AIAssistantScreen({ navigation }: any) {
 
     const audioPlayer = useAudioPlayer(null);
 
+const playAIResponseAudio = async (
+  audioBase64?: string | null,
+  audioContentType?: string | null
+) => {
+  if (!audioBase64) {
+    console.log('No AI audio returned.');
+    return;
+  }
+
+  try {
+    const contentType =
+      audioContentType || 'audio/mpeg';
+
+    console.log(
+      'AI AUDIO:',
+      contentType,
+      audioBase64.length
+    );
+
+    // ==========================
+    // WEB
+    // ==========================
+    if (Platform.OS === 'web') {
+      const audio = new Audio(
+        `data:${contentType};base64,${audioBase64}`
+      );
+
+      await audio.play();
+
+      console.log('AI audio playing on web');
+      return;
+    }
+
+    // ==========================
+    // ANDROID / IOS
+    // ==========================
+
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+    });
+
+    const extension =
+      contentType === 'audio/ogg'
+        ? 'ogg'
+        : contentType === 'audio/webm'
+          ? 'webm'
+          : 'mp3';
+
+    const fileUri =
+      `${FileSystem.cacheDirectory}ai-response-${Date.now()}.${extension}`;
+
+    await FileSystem.writeAsStringAsync(
+      fileUri,
+      audioBase64,
+      {
+        encoding: FileSystem.EncodingType.Base64,
+      }
+    );
+
+    console.log(
+      'AI AUDIO FILE:',
+      fileUri
+    );
+
+    audioPlayer.replace({
+      uri: fileUri,
+    });
+
+    await new Promise(resolve =>
+      setTimeout(resolve, 300)
+    );
+
+    audioPlayer.play();
+
+    console.log(
+      'AI audio playing on mobile'
+    );
+  } catch (error) {
+    console.error(
+      'Failed to play AI voice:',
+      error
+    );
+  }
+};
     const [lastRecordingUri, setLastRecordingUri] =
     useState<string | null>(null);
 
@@ -288,6 +376,11 @@ setMessages(current => [
 ]);
 
 setLatestResult(result);
+
+await playAIResponseAudio(
+  result.audio_base64,
+  result.audio_content_type
+);
 
     // 你原来后面的 result 处理代码继续保留
   } catch (error) {
