@@ -16,6 +16,7 @@ import {
     setAudioModeAsync,
     useAudioRecorder,
     RecordingPresets,
+    useAudioPlayer
 } from 'expo-audio';
 
 import 'react-native-get-random-values';
@@ -72,6 +73,7 @@ const FIELD_LABELS: Record<string, string> = {
 };
 
 
+
 export default function AIAssistantScreen({ navigation }: any) {
     const [mode, setMode] = useState<AssistantMode>(null);
     const [inputText, setInputText] = useState('');
@@ -80,9 +82,18 @@ export default function AIAssistantScreen({ navigation }: any) {
         useState<AIResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const [processingVoice, setProcessingVoice] = useState(false);
+
     const recorder = useAudioRecorder(
         RecordingPresets.HIGH_QUALITY
     );
+
+    const audioPlayer = useAudioPlayer(null);
+
+    const [lastRecordingUri, setLastRecordingUri] =
+    useState<string | null>(null);
+
     const [createConversationId, setCreateConversationId] =
     useState(() => uuidv4());
 
@@ -191,92 +202,128 @@ console.log('VEHICLE DRAFT:', result.vehicle_draft);
     };
 
 const handleVoice = async () => {
-    try {
-        if (!isRecording) {
-            const permission =
-                await requestRecordingPermissionsAsync();
+  try {
+    setError('');
 
-            if (!permission.granted) {
-                setError('Microphone permission is required.');
-                return;
-            }
+    if (!isRecording) {
+      const permission =
+        await requestRecordingPermissionsAsync();
 
-            await setAudioModeAsync({
-                allowsRecording: true,
-                playsInSilentMode: true,
-            });
-
-            await recorder.prepareToRecordAsync();
-            recorder.record();
-
-            setIsRecording(true);
-            setError('');
-            return;
-        }
-
-        await recorder.stop();
-        setIsRecording(false);
-
-        const audioUri = recorder.uri;
-
-        if (!audioUri || !mode) {
-            setError('No audio recording was created.');
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-
-        const result =
-            mode === 'create'
-                ? await sendVehicleCreateAudio(
-                      audioUri,
-                      createConversationId
-                  )
-                : await sendVehicleSearchAudio(
-                      audioUri,
-                      searchConversationId
-                  );
-
-        console.log('Voice AI result:', result);
-
-        setLatestResult(result);
-
-        const userVoiceMessage: ChatMessage = {
-            id: `voice-user-${Date.now()}`,
-            sender: 'user',
-            text:
-                result.transcript?.trim() ||
-                '🎤 Voice message',
-        };
-
-        const assistantMessage: ChatMessage = {
-            id: `voice-assistant-${Date.now()}`,
-            sender: 'assistant',
-            text:
-                result.message ||
-                'Your voice request was processed.',
-        };
-
-        setMessages(previous => [
-            ...previous,
-            userVoiceMessage,
-            assistantMessage,
-        ]);
-    } catch (err) {
-        console.error('Voice request failed:', err);
-
-        setIsRecording(false);
-        setLatestResult(null);
-
+      if (!permission.granted) {
         setError(
-            err instanceof Error
-                ? err.message
-                : 'Voice request failed.'
+          'Microphone permission is required.'
         );
-    } finally {
-        setLoading(false);
+        return;
+      }
+
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
+      });
+
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+
+      setIsRecording(true);
+      return;
     }
+
+    // Stop recording
+    await recorder.stop();
+    setIsRecording(false);
+
+    const audioUri = recorder.uri;
+
+    console.log('RECORDED AUDIO URI:', audioUri);
+console.log('RECORDER STATUS:', recorder.getStatus());
+
+    console.log('RECORDED AUDIO URI:', audioUri);
+
+    if (audioUri) {
+  setLastRecordingUri(audioUri);
+}
+
+    if (!audioUri) {
+      setError(
+        'No audio recording was created.'
+      );
+      return;
+    }
+
+    setProcessingVoice(true);
+
+    const result =
+      mode === 'create'
+        ? await sendVehicleCreateAudio(
+            audioUri,
+            createConversationId,
+            true
+          )
+        : await sendVehicleSearchAudio(
+            audioUri,
+            searchConversationId,
+            true
+          );
+
+const userVoiceMessage: ChatMessage = {
+  id: `voice-user-${Date.now()}`,
+  sender: 'user',
+  text:
+    result.transcript?.trim() ||
+    '🎤 Voice message',
+};
+
+const assistantVoiceMessage: ChatMessage = {
+  id: `voice-ai-${Date.now()}`,
+  sender: 'assistant',
+  text:
+    result.message ||
+    'Your voice request was processed.',
+};
+
+setMessages(current => [
+  ...current,
+  userVoiceMessage,
+  assistantVoiceMessage,
+]);
+
+setLatestResult(result);
+
+    // 你原来后面的 result 处理代码继续保留
+  } catch (error) {
+    console.error(
+      'Voice request failed:',
+      error
+    );
+
+    setIsRecording(false);
+
+    setError(
+      error instanceof Error
+        ? error.message
+        : 'Voice request failed.'
+    );
+  }finally {
+  setProcessingVoice(false);
+}
+};
+
+
+const playLastRecording = () => {
+  if (!lastRecordingUri) {
+    return;
+  }
+
+  console.log(
+    'Playing recording:',
+    lastRecordingUri
+  );
+
+  audioPlayer.replace({
+    uri: lastRecordingUri,
+  });
+
+  audioPlayer.play();
 };
 
     if (!mode) {
@@ -433,7 +480,39 @@ const handleVoice = async () => {
                         </View>
                     </View>
                 ))}
+                {processingVoice ? (
+                    <View
+                        style={[
+                            styles.messageRow,
+                            styles.assistantMessageRow,
+                        ]}
+                    >
+                        <View style={styles.chatAvatar}>
+                            <MaterialCommunityIcons
+                                name="robot-happy-outline"
+                                size={20}
+                                color="#1f6feb"
+                            />
+                        </View>
 
+                        <View
+                            style={[
+                                styles.messageBubble,
+                                styles.assistantBubble,
+                                styles.loadingBubble,
+                            ]}
+                        >
+                            <ActivityIndicator
+                                size="small"
+                                color="#1f6feb"
+                            />
+
+                            <Text style={styles.processingText}>
+                                Processing voice...
+                            </Text>
+                        </View>
+                    </View>
+                ) : null}
                 {loading ? (
                     <View style={styles.assistantMessageRow}>
                     <View style={styles.chatAvatar}>
@@ -583,8 +662,7 @@ const handleVoice = async () => {
                     isRecording && styles.micButtonRecording,
                 ]}
                 onPress={handleVoice}
-                disabled={loading}
-            >
+                disabled={loading || processingVoice}            >
                 <Text style={styles.micIcon}>
                     {isRecording ? '■' : '🎤'}
                 </Text>
@@ -615,6 +693,7 @@ const handleVoice = async () => {
                 >
                     <Text style={styles.sendIconText}>➤</Text>
                 </Pressable>
+
             </View>
         </SafeAreaView>
     );
@@ -626,6 +705,20 @@ const styles = StyleSheet.create({
         padding: 20,
         backgroundColor: '#f6f8fb',
     },
+
+testAudioButton: {
+  alignSelf: 'center',
+  marginVertical: 10,
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+  borderRadius: 10,
+  backgroundColor: '#E8F0FE',
+},
+
+testAudioButtonText: {
+  color: '#174EA6',
+  fontWeight: '600',
+},
 
 welcomeHeader: {
     width: '100%',

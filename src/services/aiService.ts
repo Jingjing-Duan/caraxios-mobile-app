@@ -38,18 +38,23 @@ export interface SearchVehicleResult {
 }
 
 export interface AIResponse {
-    conversation_id: string;
-    status: string;
-    message: string;
-    transcript?: string;
-    missing_fields?: string[];
-    vehicle_draft?: VehicleDraft;
+  conversation_id: string;
+  status: string;
+  message: string;
 
-    filters?: Record<string, unknown>;
-    results?: SearchVehicleResult[];
-    total?: number;
-    page?: number;
-    page_size?: number;
+  transcript?: string;
+
+  missing_fields?: string[];
+  vehicle_draft?: VehicleDraft;
+
+  filters?: Record<string, unknown>;
+  results?: SearchVehicleResult[];
+  total?: number;
+  page?: number;
+  page_size?: number;
+
+  audio_base64?: string | null;
+  audio_content_type?: string | null;
 }
 
 async function parseResponse(
@@ -92,47 +97,58 @@ async function sendTextRequest(
 }
 
 async function sendAudioRequest(
-    endpoint: string,
-    audioUri: string,
-    conversationId: string
+  endpoint: string,
+  audioUri: string,
+  conversationId: string,
+  speak = true
 ): Promise<AIResponse> {
-    const formData = new FormData();
+  const formData = new FormData();
 
-    formData.append('conversation_id', conversationId);
+  formData.append(
+    'conversation_id',
+    conversationId
+  );
 
-    // Expo Web 录音通常返回 blob: URL
-    if (audioUri.startsWith('blob:')) {
-        const audioResponse = await fetch(audioUri);
-        const audioBlob = await audioResponse.blob();
+  formData.append(
+    'speak',
+    String(speak)
+  );
 
-        formData.append(
-            'audio',
-            audioBlob,
-            'vehicle-command.webm'
-        );
-    } else {
-        // Android / iOS 本地文件 URI
-        formData.append(
-            'audio',
-            {
-                uri: audioUri,
-                name: 'vehicle-command.m4a',
-                type: 'audio/m4a',
-            } as any
-        );
-    }
+  // Web
+  if (audioUri.startsWith('blob:')) {
+    const audioResponse =
+      await fetch(audioUri);
 
-    const response = await fetch(
-        `${AI_API_BASE_URL}${endpoint}`,
-        {
-            method: 'POST',
-            body: formData,
-        }
+    const audioBlob =
+      await audioResponse.blob();
+
+    formData.append(
+      'audio',
+      audioBlob,
+      'vehicle-command.webm'
     );
+  } else {
+    // Android / iOS
+    formData.append(
+      'audio',
+      {
+        uri: audioUri,
+        name: 'vehicle-command.m4a',
+        type: 'audio/m4a',
+      } as any
+    );
+  }
 
-    return parseResponse(response);
+  const response = await fetch(
+    `${AI_API_BASE_URL}${endpoint}`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
+
+  return parseResponse(response);
 }
-
 export function sendVehicleCreateText(
     text: string,
     conversationId: string
@@ -156,25 +172,29 @@ export function sendVehicleSearchText(
 }
 
 export function sendVehicleCreateAudio(
-    audioUri: string,
-    conversationId: string
+  audioUri: string,
+  conversationId: string,
+  speak = true
 ): Promise<AIResponse> {
-    return sendAudioRequest(
-        '/api/v1/agent/voice/create',
-        audioUri,
-        conversationId
-    );
+  return sendAudioRequest(
+    '/api/v1/agent/voice/create',
+    audioUri,
+    conversationId,
+    speak
+  );
 }
 
 export function sendVehicleSearchAudio(
-    audioUri: string,
-    conversationId: string
+  audioUri: string,
+  conversationId: string,
+  speak = true
 ): Promise<AIResponse> {
-    return sendAudioRequest(
-        '/api/v1/agent/voice/search',
-        audioUri,
-        conversationId
-    );
+  return sendAudioRequest(
+    '/api/v1/agent/voice/search',
+    audioUri,
+    conversationId,
+    speak
+  );
 }
 
 export async function sendVehicleCreateChat(
