@@ -1,5 +1,11 @@
-//const IMAGE_BASE_URL = 'http://127.0.0.1:8000';
-const IMAGE_BASE_URL = 'http://10.0.2.2:8000';
+import { Platform } from 'react-native';
+
+console.log(Platform.OS);
+
+const IMAGE_BASE_URL =
+  Platform.OS === 'web'
+    ? 'http://127.0.0.1:8000'
+    : 'http://10.0.2.2:8000';
 
 export function getVehicleImageUrl(vehicle: any): string | undefined {
   let rawUrl =

@@ -1,6 +1,10 @@
-//const AI_API_BASE_URL = 'http://127.0.0.1:8001';
-const AI_API_BASE_URL = 'http://10.0.2.2:8001';
+import { Platform } from 'react-native';
 
+const AI_API_BASE_URL =
+  Platform.OS === 'web'
+    ? 'http://127.0.0.1:8001'
+    : 'http://10.0.2.2:8001';
+    
 export interface VehicleDraft {
     make?: string | null;
     model?: string | null;

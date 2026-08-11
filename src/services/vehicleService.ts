@@ -1,8 +1,12 @@
-//const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
-
-const API_BASE_URL = 'http://10.0.2.2:8000/api/v1';
-
 import { Platform } from 'react-native';
+
+console.log(Platform.OS);
+
+const API_BASE_URL =
+  Platform.OS === 'web'
+    ? 'http://127.0.0.1:8000/api/v1'
+    : 'http://10.0.2.2:8000/api/v1';
+    
 
 export type VehicleImageInput = {
   uri: string;
