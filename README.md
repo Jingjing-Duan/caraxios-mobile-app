@@ -27,7 +27,6 @@ The application allows dealership staff to manage inventory, decode VINs, upload
 - Vehicle Details
 - Create Vehicle
 - Edit Vehicle
-- Delete Vehicle
 - VIN Decoding
 - Multiple Image Upload
 - Image Reordering
