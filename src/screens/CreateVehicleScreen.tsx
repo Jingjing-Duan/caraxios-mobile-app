@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Image,
@@ -89,36 +89,80 @@ export default function CreateVehicleScreen({
     useState(false);
 
   const aiDraft = route.params?.aiDraft;
-  useEffect(() => {
-    if (!aiDraft) {
-      return;
-    }
+  const [transmission, setTransmission] = useState('');
+  const [drivetrain, setDrivetrain] = useState('');
 
-    setYear(
-      aiDraft.year != null
-        ? String(aiDraft.year)
+useEffect(() => {
+  if (!aiDraft) {
+    return;
+  }
+
+  setYear(
+    aiDraft.year != null
+      ? String(aiDraft.year)
+      : ''
+  );
+
+  setMake(aiDraft.make ?? '');
+
+  setModel(aiDraft.model ?? '');
+
+  setTrim(aiDraft.trim ?? '');
+
+  setBodyType(
+    aiDraft.bodyType ??
+    aiDraft.body_type ??
+    ''
+  );
+
+  setEngine(
+    aiDraft.engineInfo ??
+    aiDraft.engine_info ??
+    ''
+  );
+
+  setAskPrice(
+    aiDraft.askPrice != null
+      ? String(aiDraft.askPrice)
+      : aiDraft.ask_price != null
+        ? String(aiDraft.ask_price)
         : ''
-    );
+  );
 
-    setMake(aiDraft.make ?? '');
-    setModel(aiDraft.model ?? '');
+  setMileage(
+    aiDraft.mileage != null
+      ? String(aiDraft.mileage)
+      : ''
+  );
 
-    setAskPrice(
-      aiDraft.askPrice != null
-        ? String(aiDraft.askPrice)
-        : aiDraft.ask_price != null
-          ? String(aiDraft.ask_price)
-          : ''
-    );
+  setVin(aiDraft.vin ?? '');
 
-    if (aiDraft.vin) {
-      setVin(aiDraft.vin);
-    }
+  setExteriorColor(
+    aiDraft.color ?? ''
+  );
 
-    if (aiDraft.description) {
-      setDescription(aiDraft.description);
-    }
-  }, [aiDraft]);
+  setInteriorColor(
+    aiDraft.interiorColor ??
+    aiDraft.interior_color ??
+    ''
+  );
+  setTransmission(
+    aiDraft.transmission ??
+    aiDraft.transmissionInfo ??
+    aiDraft.transmission_info ??
+    ''
+  );
+
+  setDrivetrain(
+    aiDraft.drivetrain ??
+    aiDraft.driveTrain ??
+    aiDraft.drive_train ??
+    ''
+  );
+  setDescription(
+    aiDraft.description ?? ''
+  );
+}, [aiDraft]);
 
   const pickImages = async () => {
     const permission =
@@ -369,7 +413,8 @@ export default function CreateVehicleScreen({
         description.trim() || null,
 
       status: 'available',
-
+      transmission: transmission.trim() || null,
+      drivetrain: drivetrain.trim() || null,
       trim: trim.trim() || null,
       bodyType: bodyType.trim() || null,
       engine: engine.trim() || null,
@@ -557,7 +602,7 @@ export default function CreateVehicleScreen({
   };
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={
@@ -789,6 +834,23 @@ export default function CreateVehicleScreen({
               }
             />
           </View>
+          <View style={styles.twoColumnRow}>
+            <FormField
+              label="Transmission"
+              value={transmission}
+              onChangeText={setTransmission}
+              placeholder="10-speed automatic"
+              containerStyle={styles.halfField}
+            />
+
+            <FormField
+              label="Drivetrain"
+              value={drivetrain}
+              onChangeText={setDrivetrain}
+              placeholder="Four-wheel drive"
+              containerStyle={styles.halfField}
+            />
+          </View>
         </FormSection>
 
         <FormSection
@@ -1008,7 +1070,7 @@ export default function CreateVehicleScreen({
           </Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -7,6 +7,8 @@ import React, {
 
 import { getVehicleImageUrl } from '../utils/imageUtils';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 import {
   ActivityIndicator,
   FlatList,
@@ -428,164 +430,165 @@ if (loading && !aiVehicles) {
   }
 
   return (
-    <View style={styles.screen}>
-      <FlatList
-        data={filteredVehicles}
-        keyExtractor={(item, index) =>
-          String(getVehicleId(item) ?? `vehicle-${index}`)
-        }
-        renderItem={renderVehicle}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContent,
-          filteredVehicles.length === 0 &&
-            styles.emptyListContent,
-        ]}
-        keyboardShouldPersistTaps="handled"
-        ListHeaderComponent={
-          <View style={styles.headerContent}>
-            <View style={styles.searchRow}>
-              <View style={styles.searchContainer}>
-                <Ionicons
-                  name="search-outline"
-                  size={21}
-                  color={COLORS.outline}
-                />
+      <SafeAreaView style={styles.screen} edges={['top']}>
+        <FlatList
+          data={filteredVehicles}
+          keyExtractor={(item, index) =>
+            String(getVehicleId(item) ?? `vehicle-${index}`)
+          }
+          renderItem={renderVehicle}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.listContent,
+            filteredVehicles.length === 0 &&
+              styles.emptyListContent,
+          ]}
+          keyboardShouldPersistTaps="handled"
+          ListHeaderComponent={
+            <View style={styles.headerContent}>
+              <View style={styles.searchRow}>
+                <View style={styles.searchContainer}>
+                  <Ionicons
+                    name="search-outline"
+                    size={21}
+                    color={COLORS.outline}
+                  />
 
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search inventory"
-                  placeholderTextColor="#9A9DA8"
-                  value={searchText}
-                  onChangeText={setSearchText}
-                  returnKeyType="search"
-                />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search inventory"
+                    placeholderTextColor="#9A9DA8"
+                    value={searchText}
+                    onChangeText={setSearchText}
+                    returnKeyType="search"
+                  />
 
-                {searchText.length > 0 ? (
-                  <Pressable
-                    style={styles.clearButton}
-                    onPress={() => setSearchText('')}
-                  >
-                    <Ionicons
-                      name="close-circle"
-                      size={21}
-                      color={COLORS.outline}
-                    />
-                  </Pressable>
-                ) : null}
+                  {searchText.length > 0 ? (
+                    <Pressable
+                      style={styles.clearButton}
+                      onPress={() => setSearchText('')}
+                    >
+                      <Ionicons
+                        name="close-circle"
+                        size={21}
+                        color={COLORS.outline}
+                      />
+                    </Pressable>
+                  ) : null}
+                </View>
+
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.filterButton,
+                    statusFilter !== 'all' &&
+                      styles.filterButtonActive,
+                    pressed && styles.buttonPressed,
+                  ]}
+                  onPress={() =>
+                    navigation.navigate('Inventory', {
+                      statusFilter: 'all',
+                    })
+                  }
+                >
+                  <Ionicons
+                    name="options-outline"
+                    size={23}
+                    color={
+                      statusFilter !== 'all'
+                        ? '#FFFFFF'
+                        : COLORS.primary
+                    }
+                  />
+                </Pressable>
               </View>
 
-              <Pressable
-                style={({ pressed }) => [
-                  styles.filterButton,
-                  statusFilter !== 'all' &&
-                    styles.filterButtonActive,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={() =>
-                  navigation.navigate('Inventory', {
-                    statusFilter: 'all',
-                  })
-                }
-              >
-                <Ionicons
-                  name="options-outline"
-                  size={23}
-                  color={
-                    statusFilter !== 'all'
-                      ? '#FFFFFF'
-                      : COLORS.primary
-                  }
-                />
-              </Pressable>
-            </View>
+              <View style={styles.resultSummary}>
+                <Text style={styles.resultCount}>
+                  {filteredVehicles.length}{' '}
+                  {filteredVehicles.length === 1
+                    ? 'vehicle'
+                    : 'vehicles'}
+                </Text>
 
-            <View style={styles.resultSummary}>
-              <Text style={styles.resultCount}>
-                {filteredVehicles.length}{' '}
-                {filteredVehicles.length === 1
-                  ? 'vehicle'
-                  : 'vehicles'}
+                {statusFilter !== 'all' ? (
+                  <View style={styles.activeFilterChip}>
+                    <Text style={styles.activeFilterText}>
+                      {statusFilter}
+                    </Text>
+
+                    <Pressable
+                      onPress={() =>
+                        navigation.navigate('Inventory', {
+                          statusFilter: 'all',
+                        })
+                      }
+                    >
+                      <Ionicons
+                        name="close"
+                        size={15}
+                        color={COLORS.primary}
+                      />
+                    </Pressable>
+                  </View>
+                ) : null}
+              </View>
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconContainer}>
+                <Ionicons
+                  name="car-outline"
+                  size={48}
+                  color={COLORS.primary}
+                />
+              </View>
+
+              <Text style={styles.emptyTitle}>
+                No vehicles found
               </Text>
 
-              {statusFilter !== 'all' ? (
-                <View style={styles.activeFilterChip}>
-                  <Text style={styles.activeFilterText}>
-                    {statusFilter}
-                  </Text>
+              <Text style={styles.emptyDescription}>
+                Try changing your search or inventory filter.
+              </Text>
 
-                  <Pressable
-                    onPress={() =>
-                      navigation.navigate('Inventory', {
-                        statusFilter: 'all',
-                      })
-                    }
-                  >
-                    <Ionicons
-                      name="close"
-                      size={15}
-                      color={COLORS.primary}
-                    />
-                  </Pressable>
-                </View>
+              {searchText.length > 0 ||
+              statusFilter !== 'all' ? (
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.resetButton,
+                    pressed && styles.buttonPressed,
+                  ]}
+                  onPress={() => {
+                    setSearchText('');
+
+                    navigation.navigate('Inventory', {
+                      statusFilter: 'all',
+                    });
+                  }}
+                >
+                  <Text style={styles.resetButtonText}>
+                    Reset Filters
+                  </Text>
+                </Pressable>
               ) : null}
             </View>
-          </View>
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconContainer}>
-              <Ionicons
-                name="car-outline"
-                size={48}
-                color={COLORS.primary}
-              />
-            </View>
+          }
+        />
 
-            <Text style={styles.emptyTitle}>
-              No vehicles found
-            </Text>
-
-            <Text style={styles.emptyDescription}>
-              Try changing your search or inventory filter.
-            </Text>
-
-            {searchText.length > 0 ||
-            statusFilter !== 'all' ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.resetButton,
-                  pressed && styles.buttonPressed,
-                ]}
-                onPress={() => {
-                  setSearchText('');
-
-                  navigation.navigate('Inventory', {
-                    statusFilter: 'all',
-                  });
-                }}
-              >
-                <Text style={styles.resetButtonText}>
-                  Reset Filters
-                </Text>
-              </Pressable>
-            ) : null}
-          </View>
-        }
-      />
-
-      <Pressable
-        style={({ pressed }) => [
-          styles.addButton,
-          pressed && styles.addButtonPressed,
-        ]}
-        onPress={() =>
-          navigation.navigate('CreateVehicle')
-        }
-      >
-        <Ionicons name="add" size={31} color="#FFFFFF" />
-      </Pressable>
-    </View>
+        <Pressable
+          style={({ pressed }) => [
+            styles.addButton,
+            pressed && styles.addButtonPressed,
+          ]}
+          onPress={() =>
+            navigation.navigate('CreateVehicle')
+          }
+        >
+          <Ionicons name="add" size={31} color="#FFFFFF" />
+        </Pressable>
+      </SafeAreaView>
+    
   );
 }
 

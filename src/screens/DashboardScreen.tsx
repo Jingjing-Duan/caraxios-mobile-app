@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { getVehicleImageUrl } from '../utils/imageUtils';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ActivityIndicator,
   Image,
@@ -218,254 +218,259 @@ export default function DashboardScreen({ navigation }: any) {
   }
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.brandContainer}>
-          <View style={styles.logoCircle}>
-            <Ionicons
-              name="car-sport"
-              size={23}
-              color={COLORS.primary}
-            />
+  <SafeAreaView
+    style={styles.screen}
+    edges={['top']}
+  >
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.brandContainer}>
+            <View style={styles.logoCircle}>
+              <Ionicons
+                name="car-sport"
+                size={23}
+                color={COLORS.primary}
+              />
+            </View>
+
+            <View>
+              <Text style={styles.brandName}>CarAxios</Text>
+              <Text style={styles.headerSubtitle}>
+                Inventory Dashboard
+              </Text>
+            </View>
           </View>
 
-          <View>
-            <Text style={styles.brandName}>CarAxios</Text>
-            <Text style={styles.headerSubtitle}>
-              Inventory Dashboard
-            </Text>
-          </View>
-        </View>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.notificationButton,
-            pressed && styles.pressed,
-          ]}
-        >
-          <Ionicons
-            name="notifications-outline"
-            size={24}
-            color={COLORS.textMuted}
-          />
-        </Pressable>
-      </View>
-
-      {errorMessage ? (
-        <View style={styles.errorContainer}>
-          <Ionicons
-            name="alert-circle-outline"
-            size={22}
-            color="#BA1A1A"
-          />
-
-          <Text style={styles.errorText}>{errorMessage}</Text>
-
-          <Pressable onPress={() => loadVehicles(true)}>
-            <Text style={styles.retryText}>
-              {refreshing ? 'Loading...' : 'Retry'}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {/* Statistics */}
-      <View style={styles.statsContainer}>
-        <StatCard
-          label="Total Inventory"
-          value={totalVehicles}
-          description="All dealership vehicles"
-          icon="analytics-outline"
-          iconColor={COLORS.primary}
-          onPress={() => openInventory('all')}
-        />
-
-        <StatCard
-          label="Available Vehicles"
-          value={availableVehicles}
-          description="Ready for sale"
-          icon="checkmark-circle-outline"
-          iconColor={COLORS.secondary}
-          onPress={() => openInventory('available')}
-        />
-
-        <StatCard
-          label="Sold Vehicles"
-          value={soldVehicles}
-          description="Completed vehicle sales"
-          icon="pricetag-outline"
-          iconColor="#444749"
-          onPress={() => openInventory('sold')}
-        />
-      </View>
-
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-
-        <View style={styles.quickActionsContainer}>
-          <QuickAction
-            label="Scan VIN"
-            icon="scan-outline"
-            backgroundColor={COLORS.secondaryContainer}
-            textColor="#38485D"
-            onPress={() =>
-              navigation.navigate('CreateVehicle', {
-                focusVin: true,
-              })
-            }
-          />
-
-          <QuickAction
-            label="Add Vehicle"
-            icon="add-circle-outline"
-            backgroundColor={COLORS.primaryContainer}
-            textColor="#FFFFFF"
-            onPress={() => navigation.navigate('CreateVehicle')}
-          />
-
-          <QuickAction
-            label="AI Assistant"
-            icon="sparkles-outline"
-            backgroundColor={COLORS.soldSurface}
-            textColor={COLORS.textMuted}
-            onPress={() => navigation.navigate('AIAssistant')}
-          />
-        </View>
-      </View>
-
-      {/* Recently Added */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recently Added</Text>
-
-          <Pressable onPress={() => openInventory('all')}>
-            <Text style={styles.viewAllText}>View All</Text>
-          </Pressable>
-        </View>
-
-        {recentlyAddedVehicles.length === 0 ? (
-          <View style={styles.emptyContainer}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.notificationButton,
+              pressed && styles.pressed,
+            ]}
+          >
             <Ionicons
-              name="car-outline"
-              size={38}
+              name="notifications-outline"
+              size={24}
               color={COLORS.textMuted}
             />
+          </Pressable>
+        </View>
 
-            <Text style={styles.emptyTitle}>
-              No vehicles added yet
-            </Text>
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={22}
+              color="#BA1A1A"
+            />
 
-            <Text style={styles.emptyDescription}>
-              Add your first vehicle to start building the inventory.
-            </Text>
+            <Text style={styles.errorText}>{errorMessage}</Text>
 
-            <Pressable
-              style={({ pressed }) => [
-                styles.emptyButton,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => navigation.navigate('CreateVehicle')}
-            >
-              <Ionicons name="add" size={18} color="#FFFFFF" />
-              <Text style={styles.emptyButtonText}>Add Vehicle</Text>
+            <Pressable onPress={() => loadVehicles(true)}>
+              <Text style={styles.retryText}>
+                {refreshing ? 'Loading...' : 'Retry'}
+              </Text>
             </Pressable>
           </View>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.recentList}
-          >
-            {recentlyAddedVehicles.map((vehicle, index) => {
-              const vehicleId = getVehicleId(vehicle);
-              const imageUri = getVehicleImageUrl(vehicle);
-              const status =
-                vehicle.status?.toLowerCase() ?? 'unknown';
+        ) : null}
 
-              return (
-                <Pressable
-                  key={vehicleId ?? `vehicle-${index}`}
-                  style={({ pressed }) => [
-                    styles.vehicleCard,
-                    pressed && styles.pressed,
-                  ]}
-                  onPress={() => openVehicleDetails(vehicle)}
-                >
-                  <View style={styles.vehicleImageContainer}>
-                    {imageUri ? (
-                      <Image
-                        source={{ uri: imageUri }}
-                        style={styles.vehicleImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.vehicleImagePlaceholder}>
-                        <Ionicons
-                          name="car-sport-outline"
-                          size={48}
-                          color={COLORS.textMuted}
+        {/* Statistics */}
+        <View style={styles.statsContainer}>
+          <StatCard
+            label="Total Inventory"
+            value={totalVehicles}
+            description="All dealership vehicles"
+            icon="analytics-outline"
+            iconColor="#0B4DB3"
+            onPress={() => openInventory('all')}
+          />
+
+          <StatCard
+            label="Available Vehicles"
+            value={availableVehicles}
+            description="Ready for sale"
+            icon="checkmark-circle-outline"
+            iconColor="#6d977b"
+            onPress={() => openInventory('available')}
+          />
+
+          <StatCard
+            label="Sold Vehicles"
+            value={soldVehicles}
+            description="Completed vehicle sales"
+            icon="pricetag-outline"
+            iconColor="#596273"
+            onPress={() => openInventory('sold')}
+          />
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+
+          <View style={styles.quickActionsContainer}>
+            <QuickAction
+              label="Scan VIN"
+              icon="scan-outline"
+              backgroundColor={COLORS.secondaryContainer}
+              textColor="#38485D"
+              onPress={() =>
+                navigation.navigate('CreateVehicle', {
+                  focusVin: true,
+                })
+              }
+            />
+
+            <QuickAction
+              label="Add Vehicle"
+              icon="add-circle-outline"
+              backgroundColor={COLORS.primaryContainer}
+              textColor="#FFFFFF"
+              onPress={() => navigation.navigate('CreateVehicle')}
+            />
+
+            <QuickAction
+              label="AI Assistant"
+              icon="sparkles-outline"
+              backgroundColor={COLORS.soldSurface}
+              textColor={COLORS.textMuted}
+              onPress={() => navigation.navigate('AIAssistant')}
+            />
+          </View>
+        </View>
+
+        {/* Recently Added */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Recently Added</Text>
+
+            <Pressable onPress={() => openInventory('all')}>
+              <Text style={styles.viewAllText}>View All</Text>
+            </Pressable>
+          </View>
+
+          {recentlyAddedVehicles.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Ionicons
+                name="car-outline"
+                size={38}
+                color={COLORS.textMuted}
+              />
+
+              <Text style={styles.emptyTitle}>
+                No vehicles added yet
+              </Text>
+
+              <Text style={styles.emptyDescription}>
+                Add your first vehicle to start building the inventory.
+              </Text>
+
+              <Pressable
+                style={({ pressed }) => [
+                  styles.emptyButton,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => navigation.navigate('CreateVehicle')}
+              >
+                <Ionicons name="add" size={18} color="#FFFFFF" />
+                <Text style={styles.emptyButtonText}>Add Vehicle</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.recentList}
+            >
+              {recentlyAddedVehicles.map((vehicle, index) => {
+                const vehicleId = getVehicleId(vehicle);
+                const imageUri = getVehicleImageUrl(vehicle);
+                const status =
+                  vehicle.status?.toLowerCase() ?? 'unknown';
+
+                return (
+                  <Pressable
+                    key={vehicleId ?? `vehicle-${index}`}
+                    style={({ pressed }) => [
+                      styles.vehicleCard,
+                      pressed && styles.pressed,
+                    ]}
+                    onPress={() => openVehicleDetails(vehicle)}
+                  >
+                    <View style={styles.vehicleImageContainer}>
+                      {imageUri ? (
+                        <Image
+                          source={{ uri: imageUri }}
+                          style={styles.vehicleImage}
+                          resizeMode="cover"
                         />
+                      ) : (
+                        <View style={styles.vehicleImagePlaceholder}>
+                          <Ionicons
+                            name="car-sport-outline"
+                            size={48}
+                            color={COLORS.textMuted}
+                          />
 
-                        <Text style={styles.placeholderText}>
-                          No image
+                          <Text style={styles.placeholderText}>
+                            No image
+                          </Text>
+                        </View>
+                      )}
+
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          status === 'available' &&
+                            styles.availableBadge,
+                          status === 'sold' && styles.soldBadge,
+                          status === 'draft' && styles.draftBadge,
+                        ]}
+                      >
+                        <Text style={styles.statusBadgeText}>
+                          {status}
                         </Text>
                       </View>
-                    )}
-
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        status === 'available' &&
-                          styles.availableBadge,
-                        status === 'sold' && styles.soldBadge,
-                        status === 'draft' && styles.draftBadge,
-                      ]}
-                    >
-                      <Text style={styles.statusBadgeText}>
-                        {status}
-                      </Text>
                     </View>
-                  </View>
 
-                  <View style={styles.vehicleCardContent}>
-                    <Text
-                      style={styles.vehicleTitle}
-                      numberOfLines={1}
-                    >
-                      {getVehicleTitle(vehicle) ||
-                        'Unnamed Vehicle'}
-                    </Text>
-
-                    <View style={styles.vehicleDetailsRow}>
+                    <View style={styles.vehicleCardContent}>
                       <Text
-                        style={styles.vehicleVin}
+                        style={styles.vehicleTitle}
                         numberOfLines={1}
                       >
-                        VIN: {formatVin(vehicle.vin)}
+                        {getVehicleTitle(vehicle) ||
+                          'Unnamed Vehicle'}
                       </Text>
 
-                      <Text style={styles.vehiclePrice}>
-                        {formatPrice(
-                          vehicle.askPrice ??
-                          vehicle.ask_price ??
-                          vehicle.price
-                        )}
-                      </Text>
+                      <View style={styles.vehicleDetailsRow}>
+                        <Text
+                          style={styles.vehicleVin}
+                          numberOfLines={1}
+                        >
+                          VIN: {formatVin(vehicle.vin)}
+                        </Text>
+
+                        <Text style={styles.vehiclePrice}>
+                          {formatPrice(
+                            vehicle.askPrice ??
+                            vehicle.ask_price ??
+                            vehicle.price
+                          )}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
-    </ScrollView>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

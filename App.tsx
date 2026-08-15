@@ -16,6 +16,8 @@ import {
     createBottomTabNavigator,
 } from '@react-navigation/bottom-tabs';
 
+
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 
 import DashboardScreen from './src/screens/DashboardScreen';
@@ -164,40 +166,38 @@ function MainTabs() {
  * - Edit Vehicle
  */
 export default function App() {
-    return (
-        <NavigationContainer>
-            <Stack.Navigator
-                initialRouteName="MainTabs"
-                screenOptions={{
-                    headerShown: false,
-                    animation: 'slide_from_right',
-                    contentStyle: {
-                        backgroundColor: '#F7F8FC',
-                    },
-                }}
-            >
-                <Stack.Screen
-                    name="MainTabs"
-                    component={MainTabs}
-                />
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <NavigationContainer>
+        <Stack.Navigator
+          initialRouteName="MainTabs"
+          screenOptions={{
+            headerShown: false,
+          }}
+        >
+          <Stack.Screen
+            name="MainTabs"
+            component={MainTabs}
+          />
 
-                <Stack.Screen
-                    name="VehicleDetail"
-                    component={VehicleDetailScreen}
-                />
+          <Stack.Screen
+            name="VehicleDetail"
+            component={VehicleDetailScreen}
+          />
 
-                <Stack.Screen
-                    name="CreateVehicle"
-                    component={CreateVehicleScreen}
-                />
+          <Stack.Screen
+            name="CreateVehicle"
+            component={CreateVehicleScreen}
+          />
 
-                <Stack.Screen
-                    name="EditVehicle"
-                    component={EditVehicleScreen}
-                />
-            </Stack.Navigator>
-        </NavigationContainer>
-    );
+          <Stack.Screen
+            name="EditVehicle"
+            component={EditVehicleScreen}
+          />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </GestureHandlerRootView>
+  );
 }
 
 const styles = StyleSheet.create({

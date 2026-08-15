@@ -4,6 +4,7 @@ import React, {
   useState,
 } from 'react';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
 import {
@@ -65,12 +66,16 @@ type Vehicle = {
   interior_color?: string;
   bodyType?: string;
   body_type?: string;
-  drivetrain?: string;
   engineInfo?: string;
   engine_info?: string;
   engine?: string;
   engine_type?: string;
   transmission?: string;
+  transmissionInfo?: string;
+  transmission_info?: string;
+  drivetrain?: string;
+  driveTrain?: string;
+  drive_train?: string;
   image_url?: string;
   primary_image_url?: string;
   images?: Array<string | VehicleImage>;
@@ -114,6 +119,7 @@ export default function VehicleDetailScreen({
   const [vehicleImages, setVehicleImages] =
     useState<VehicleImage[]>([]);
   const galleryRef = useRef<FlatList<string>>(null);
+  const [galleryWidth, setGalleryWidth] = useState(0);
 
   const loadVehicle = async () => {
     try {
@@ -260,7 +266,8 @@ export default function VehicleDetailScreen({
     event: NativeSyntheticEvent<NativeScrollEvent>
   ) => {
     const index = Math.round(
-      event.nativeEvent.contentOffset.x / SCREEN_WIDTH
+      event.nativeEvent.contentOffset.x /
+        (galleryWidth || 1)
     );
 
     setActiveImageIndex(index);
@@ -368,7 +375,7 @@ export default function VehicleDetailScreen({
     .join(' • ');
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -436,7 +443,14 @@ export default function VehicleDetailScreen({
         </View>
 
         {/* Image Gallery */}
-        <View style={styles.galleryContainer}>
+        <View
+          style={styles.galleryContainer}
+          onLayout={event => {
+            setGalleryWidth(
+              event.nativeEvent.layout.width
+            );
+          }}
+        >
           {images.length > 0 ? (
             <FlatList
               ref={galleryRef}
@@ -449,11 +463,18 @@ export default function VehicleDetailScreen({
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={handleImageScroll}
               renderItem={({ item }) => (
-                <Image
-                  source={{ uri: item }}
-                  style={styles.galleryImage}
-                  resizeMode="contain"
-                />
+                <View
+                  style={{
+                    width: galleryWidth,
+                    height: 310,
+                  }}
+                >
+                  <Image
+                    source={{ uri: item }}
+                    style={styles.galleryImage}
+                    resizeMode="contain"
+                  />
+                </View>
               )}
             />
           ) : (
@@ -566,7 +587,10 @@ export default function VehicleDetailScreen({
             <SpecificationCard
               label="Transmission"
               value={
-                vehicle.transmission || 'Not provided'
+                vehicle.transmission ??
+                vehicle.transmissionInfo ??
+                vehicle.transmission_info ??
+                'Not provided'
               }
               icon="git-compare-outline"
             />
@@ -602,7 +626,10 @@ export default function VehicleDetailScreen({
             <SpecificationCard
               label="Drivetrain"
               value={
-                vehicle.drivetrain || 'Not provided'
+                vehicle.drivetrain ??
+                vehicle.driveTrain ??
+                vehicle.drive_train ??
+                'Not provided'
               }
               icon="cog-outline"
             />
@@ -648,7 +675,7 @@ export default function VehicleDetailScreen({
           />
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -778,10 +805,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.softSurface,
   },
 
-  galleryImage: {
-    width: SCREEN_WIDTH,
-    height: 310,
-  },
+galleryImage: {
+  width: '100%',
+  height: '100%',
+},
 
   imagePlaceholder: {
     flex: 1,

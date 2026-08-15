@@ -2,7 +2,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { normalizeImageUrl } from '../utils/imageUtils';
 
 import {
@@ -848,7 +848,7 @@ const handleUpdate = async () => {
   }
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={
@@ -1215,8 +1215,15 @@ const handleUpdate = async () => {
             />
 
             <StatusOption
-              label="Pending"
-              value="pending"
+              label="Inactive"
+              value="inactive"
+              selectedValue={status}
+              onSelect={setStatus}
+            />
+
+            <StatusOption
+              label="Draft"
+              value="draft"
               selectedValue={status}
               onSelect={setStatus}
             />
@@ -1353,7 +1360,7 @@ const handleUpdate = async () => {
           </Text>
         </Pressable>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -1998,6 +2005,7 @@ const styles = StyleSheet.create({
   },
 
   statusOption: {
+    width: '48%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
     ActivityIndicator,
     Pressable,
@@ -8,15 +9,21 @@ import {
     Text,
     TextInput,
     View,
+    Platform,
 } from 'react-native';
+
+import * as FileSystem from 'expo-file-system/legacy';
 
 import {
     requestRecordingPermissionsAsync,
     setAudioModeAsync,
     useAudioRecorder,
     RecordingPresets,
+    useAudioPlayer
 } from 'expo-audio';
 
+import 'react-native-get-random-values';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
     AIResponse,
@@ -24,6 +31,8 @@ import {
     sendVehicleSearchText,
     sendVehicleCreateAudio,
     sendVehicleSearchAudio,
+    sendVehicleCreateChat,
+    sendVehicleSearchChat
 } from '../services/aiService';
 
 type AssistantMode = 'create' | 'search' | null;
@@ -34,11 +43,37 @@ type ChatMessage = {
     text: string;
 };
 
-const CREATE_CONVERSATION_ID =
-    '550e8400-e29b-41d4-a716-446655440011';
-
-const SEARCH_CONVERSATION_ID =
-    '550e8400-e29b-41d4-a716-446655440012';
+const FIELD_LABELS: Record<string, string> = {
+  year: 'Year',
+  make: 'Make',
+  model: 'Model',
+  trim: 'Trim',
+  vin: 'VIN',
+  askPrice: 'Ask Price',
+  ask_price: 'Ask Price',
+  stockNumber: 'Stock Number',
+  mileage: 'Mileage',
+  isKm: 'Mileage Unit',
+  status: 'Status',
+  condition: 'Condition',
+  certified: 'Certified',
+  color: 'Exterior Color',
+  interiorColor: 'Interior Color',
+  numberDoors: 'Doors',
+  numberSeats: 'Seats',
+  engineSize: 'Engine Size',
+  engineInfo: 'Engine',
+  engineCylinders: 'Cylinders',
+  transmission: 'Transmission',
+  transmissionInfo: 'Transmission Info',
+  fuelType: 'Fuel Type',
+  bodyType: 'Body Type',
+  drivetrain: 'Drivetrain',
+  fuelEconomyCity: 'City Fuel Economy',
+  fuelEconomyHighway: 'Highway Fuel Economy',
+  displayFuelEconomy: 'Fuel Economy',
+  description: 'Description',
+};
 
 
 
@@ -50,9 +85,108 @@ export default function AIAssistantScreen({ navigation }: any) {
         useState<AIResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    const [processingVoice, setProcessingVoice] = useState(false);
+
     const recorder = useAudioRecorder(
         RecordingPresets.HIGH_QUALITY
     );
+
+    const audioPlayer = useAudioPlayer(null);
+
+const playAIResponseAudio = async (
+  audioBase64?: string | null,
+  audioContentType?: string | null
+) => {
+  if (!audioBase64) {
+    console.log('No AI audio returned.');
+    return;
+  }
+
+  try {
+    const contentType =
+      audioContentType || 'audio/mpeg';
+
+    console.log(
+      'AI AUDIO:',
+      contentType,
+      audioBase64.length
+    );
+
+    // ==========================
+    // WEB
+    // ==========================
+    if (Platform.OS === 'web') {
+      const audio = new Audio(
+        `data:${contentType};base64,${audioBase64}`
+      );
+
+      await audio.play();
+
+      console.log('AI audio playing on web');
+      return;
+    }
+
+    // ==========================
+    // ANDROID / IOS
+    // ==========================
+
+    await setAudioModeAsync({
+      allowsRecording: false,
+      playsInSilentMode: true,
+    });
+
+    const extension =
+      contentType === 'audio/ogg'
+        ? 'ogg'
+        : contentType === 'audio/webm'
+          ? 'webm'
+          : 'mp3';
+
+    const fileUri =
+      `${FileSystem.cacheDirectory}ai-response-${Date.now()}.${extension}`;
+
+    await FileSystem.writeAsStringAsync(
+      fileUri,
+      audioBase64,
+      {
+        encoding: FileSystem.EncodingType.Base64,
+      }
+    );
+
+    console.log(
+      'AI AUDIO FILE:',
+      fileUri
+    );
+
+    audioPlayer.replace({
+      uri: fileUri,
+    });
+
+    await new Promise(resolve =>
+      setTimeout(resolve, 300)
+    );
+
+    audioPlayer.play();
+
+    console.log(
+      'AI audio playing on mobile'
+    );
+  } catch (error) {
+    console.error(
+      'Failed to play AI voice:',
+      error
+    );
+  }
+};
+    const [lastRecordingUri, setLastRecordingUri] =
+    useState<string | null>(null);
+
+    const [createConversationId, setCreateConversationId] =
+    useState(() => uuidv4());
+
+    const [searchConversationId, setSearchConversationId] =
+    useState(() => uuidv4());
 
     const [isRecording, setIsRecording] = useState(false);
     const selectMode = (selectedMode: AssistantMode) => {
@@ -64,6 +198,8 @@ export default function AIAssistantScreen({ navigation }: any) {
 
 
         if (selectedMode === 'create') {
+            setCreateConversationId(uuidv4());
+
             setMessages([
                 {
                     id: 'welcome-create',
@@ -74,6 +210,8 @@ export default function AIAssistantScreen({ navigation }: any) {
         }
 
         if (selectedMode === 'search') {
+            setSearchConversationId(uuidv4());
+
             setMessages([
                 {
                     id: 'welcome-search',
@@ -109,14 +247,19 @@ export default function AIAssistantScreen({ navigation }: any) {
         try {
             const result =
                 mode === 'create'
-                    ? await sendVehicleCreateText(
+                    ? await sendVehicleCreateChat(
                           text,
-                          CREATE_CONVERSATION_ID
+                          createConversationId
                       )
-                    : await sendVehicleSearchText(
+                    : await sendVehicleSearchChat(
                           text,
-                          SEARCH_CONVERSATION_ID
+                          searchConversationId
                       );
+
+console.log('RAW AI RESULT:', result);
+console.log('AI MESSAGE:', result.message);
+console.log('MISSING FIELDS:', result.missing_fields);
+console.log('VEHICLE DRAFT:', result.vehicle_draft);
 
             setLatestResult(result);
 
@@ -147,97 +290,138 @@ export default function AIAssistantScreen({ navigation }: any) {
     };
 
 const handleVoice = async () => {
-    try {
-        if (!isRecording) {
-            const permission =
-                await requestRecordingPermissionsAsync();
+  try {
+    setError('');
 
-            if (!permission.granted) {
-                setError('Microphone permission is required.');
-                return;
-            }
+    if (!isRecording) {
+      const permission =
+        await requestRecordingPermissionsAsync();
 
-            await setAudioModeAsync({
-                allowsRecording: true,
-                playsInSilentMode: true,
-            });
-
-            await recorder.prepareToRecordAsync();
-            recorder.record();
-
-            setIsRecording(true);
-            setError('');
-            return;
-        }
-
-        await recorder.stop();
-        setIsRecording(false);
-
-        const audioUri = recorder.uri;
-
-        if (!audioUri || !mode) {
-            setError('No audio recording was created.');
-            return;
-        }
-
-        setLoading(true);
-        setError('');
-
-        const result =
-            mode === 'create'
-                ? await sendVehicleCreateAudio(
-                      audioUri,
-                      CREATE_CONVERSATION_ID
-                  )
-                : await sendVehicleSearchAudio(
-                      audioUri,
-                      SEARCH_CONVERSATION_ID
-                  );
-
-        console.log('Voice AI result:', result);
-
-        setLatestResult(result);
-
-        const userVoiceMessage: ChatMessage = {
-            id: `voice-user-${Date.now()}`,
-            sender: 'user',
-            text:
-                result.transcript?.trim() ||
-                '🎤 Voice message',
-        };
-
-        const assistantMessage: ChatMessage = {
-            id: `voice-assistant-${Date.now()}`,
-            sender: 'assistant',
-            text:
-                result.message ||
-                'Your voice request was processed.',
-        };
-
-        setMessages(previous => [
-            ...previous,
-            userVoiceMessage,
-            assistantMessage,
-        ]);
-    } catch (err) {
-        console.error('Voice request failed:', err);
-
-        setIsRecording(false);
-        setLatestResult(null);
-
+      if (!permission.granted) {
         setError(
-            err instanceof Error
-                ? err.message
-                : 'Voice request failed.'
+          'Microphone permission is required.'
         );
-    } finally {
-        setLoading(false);
+        return;
+      }
+
+      await setAudioModeAsync({
+        allowsRecording: true,
+        playsInSilentMode: true,
+      });
+
+      await recorder.prepareToRecordAsync();
+      recorder.record();
+
+      setIsRecording(true);
+      return;
     }
+
+    // Stop recording
+    await recorder.stop();
+    setIsRecording(false);
+
+    const audioUri = recorder.uri;
+
+    console.log('RECORDED AUDIO URI:', audioUri);
+console.log('RECORDER STATUS:', recorder.getStatus());
+
+    console.log('RECORDED AUDIO URI:', audioUri);
+
+    if (audioUri) {
+  setLastRecordingUri(audioUri);
+}
+
+    if (!audioUri) {
+      setError(
+        'No audio recording was created.'
+      );
+      return;
+    }
+
+    setProcessingVoice(true);
+
+    const result =
+      mode === 'create'
+        ? await sendVehicleCreateAudio(
+            audioUri,
+            createConversationId,
+            true
+          )
+        : await sendVehicleSearchAudio(
+            audioUri,
+            searchConversationId,
+            true
+          );
+
+const userVoiceMessage: ChatMessage = {
+  id: `voice-user-${Date.now()}`,
+  sender: 'user',
+  text:
+    result.transcript?.trim() ||
+    '🎤 Voice message',
+};
+
+const assistantVoiceMessage: ChatMessage = {
+  id: `voice-ai-${Date.now()}`,
+  sender: 'assistant',
+  text:
+    result.message ||
+    'Your voice request was processed.',
+};
+
+setMessages(current => [
+  ...current,
+  userVoiceMessage,
+  assistantVoiceMessage,
+]);
+
+setLatestResult(result);
+
+await playAIResponseAudio(
+  result.audio_base64,
+  result.audio_content_type
+);
+
+    // 你原来后面的 result 处理代码继续保留
+  } catch (error) {
+    console.error(
+      'Voice request failed:',
+      error
+    );
+
+    setIsRecording(false);
+
+    setError(
+      error instanceof Error
+        ? error.message
+        : 'Voice request failed.'
+    );
+  }finally {
+  setProcessingVoice(false);
+}
+};
+
+
+const playLastRecording = () => {
+  if (!lastRecordingUri) {
+    return;
+  }
+
+  console.log(
+    'Playing recording:',
+    lastRecordingUri
+  );
+
+  audioPlayer.replace({
+    uri: lastRecordingUri,
+  });
+
+  audioPlayer.play();
 };
 
     if (!mode) {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.welcomeHeader}>
                     <View style={styles.robotAvatar}>
                         <MaterialCommunityIcons
@@ -297,12 +481,13 @@ const handleVoice = async () => {
 
                     <Text style={styles.arrow}>›</Text>
                 </Pressable>
-            </View>
+            </SafeAreaView>
         );
     }
 
+    const vehicleDraft = latestResult?.vehicle_draft;
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <View style={styles.topBar}>
                 <Pressable
                     style={styles.changeModeButton}
@@ -388,7 +573,39 @@ const handleVoice = async () => {
                         </View>
                     </View>
                 ))}
+                {processingVoice ? (
+                    <View
+                        style={[
+                            styles.messageRow,
+                            styles.assistantMessageRow,
+                        ]}
+                    >
+                        <View style={styles.chatAvatar}>
+                            <MaterialCommunityIcons
+                                name="robot-happy-outline"
+                                size={20}
+                                color="#1f6feb"
+                            />
+                        </View>
 
+                        <View
+                            style={[
+                                styles.messageBubble,
+                                styles.assistantBubble,
+                                styles.loadingBubble,
+                            ]}
+                        >
+                            <ActivityIndicator
+                                size="small"
+                                color="#1f6feb"
+                            />
+
+                            <Text style={styles.processingText}>
+                                Processing voice...
+                            </Text>
+                        </View>
+                    </View>
+                ) : null}
                 {loading ? (
                     <View style={styles.assistantMessageRow}>
                     <View style={styles.chatAvatar}>
@@ -414,58 +631,49 @@ const handleVoice = async () => {
                     </View>
                 ) : null}
 
-                {latestResult?.vehicle_draft ? (
+                {vehicleDraft ? (
                     <View style={styles.resultCard}>
                         <Text style={styles.resultCardTitle}>
                             Vehicle Draft
                         </Text>
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Year
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.year ?? '-'}
-                            </Text>
-                        </View>
+                        {Object.entries(vehicleDraft ?? {})
+                            .filter(([key, value]) => {
+                                if (
+                                    value === null ||
+                                    value === undefined ||
+                                    value === ''
+                                ) {
+                                    return false;
+                                }
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Make
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.make ?? '-'}
-                            </Text>
-                        </View>
+                                if (
+                                    key === 'ask_price' &&
+                                    vehicleDraft.askPrice != null
+                                ) {
+                                    return false;
+                                }
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Model
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.model ?? '-'}
-                            </Text>
-                        </View>
+                                return true;
+                            })
+                            .map(([key, value]) => (
+                                <View
+                                    key={key}
+                                    style={styles.resultRow}
+                                >
+                                    <Text style={styles.resultLabel}>
+                                        {FIELD_LABELS[key] ?? key}
+                                    </Text>
 
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Ask Price
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.askPrice ??
-                                    latestResult.vehicle_draft.ask_price ??
-                                    '-'}
-                            </Text>
-                        </View>
-
-                        <View style={styles.resultRow}>
-                            <Text style={styles.resultLabel}>
-                                Status
-                            </Text>
-                            <Text style={styles.resultValue}>
-                                {latestResult.vehicle_draft.status ?? '-'}
-                            </Text>
-                        </View>
+                                    <Text style={styles.resultValue}>
+                                        {typeof value === 'boolean'
+                                            ? value
+                                                ? 'Yes'
+                                                : 'No'
+                                            : String(value)}
+                                    </Text>
+                                </View>
+                            ))}
 
                         <View style={styles.statusBadge}>
                             <Text style={styles.statusBadgeText}>
@@ -476,12 +684,12 @@ const handleVoice = async () => {
                 ) : null}
 
                 {latestResult?.status === 'ready_to_confirm' &&
-                latestResult.vehicle_draft ? (
+                vehicleDraft ? (
                     <Pressable
                         style={styles.primaryActionButton}
                         onPress={() =>
                             navigation.navigate('CreateVehicle', {
-                                aiDraft: latestResult.vehicle_draft,
+                                aiDraft: vehicleDraft,
                             })
                         }
                     >
@@ -547,8 +755,7 @@ const handleVoice = async () => {
                     isRecording && styles.micButtonRecording,
                 ]}
                 onPress={handleVoice}
-                disabled={loading}
-            >
+                disabled={loading || processingVoice}            >
                 <Text style={styles.micIcon}>
                     {isRecording ? '■' : '🎤'}
                 </Text>
@@ -579,8 +786,9 @@ const handleVoice = async () => {
                 >
                     <Text style={styles.sendIconText}>➤</Text>
                 </Pressable>
+
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 
@@ -590,6 +798,20 @@ const styles = StyleSheet.create({
         padding: 20,
         backgroundColor: '#f6f8fb',
     },
+
+testAudioButton: {
+  alignSelf: 'center',
+  marginVertical: 10,
+  paddingHorizontal: 16,
+  paddingVertical: 10,
+  borderRadius: 10,
+  backgroundColor: '#E8F0FE',
+},
+
+testAudioButtonText: {
+  color: '#174EA6',
+  fontWeight: '600',
+},
 
 welcomeHeader: {
     width: '100%',
